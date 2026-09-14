@@ -5,117 +5,400 @@
 <title>2027 Sailing Calendar</title>
 
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  .controls { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px; }
-  .month-nav button { padding: 6px 12px; }
-  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .day-header { font-weight: bold; text-align: center; padding: 4px 0; border-bottom: 1px solid #ccc; }
-  .day { border: 1px solid #ccc; min-height: 70px; padding: 4px; cursor: pointer; background: #fafafa; }
-  .day-number { font-weight: bold; }
-  .event-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px; }
-  .event-summary { font-size: 11px; margin-top: 2px; }
-  #eventDetails { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    margin-right: 280px; /* space for sidebar */
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .month-nav button {
+    padding: 6px 12px;
+  }
+
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .day-header {
+    font-weight: bold;
+    text-align: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .day {
+    border: 1px solid #ccc;
+    min-height: 70px;
+    padding: 4px;
+    cursor: pointer;
+    background: #fafafa;
+  }
+
+  .day-number {
+    font-weight: bold;
+  }
+
+  .event-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 3px;
+  }
+
+  .event-summary {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  #eventDetails {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+
+  /* Mobile-friendly layout */
+  @media (max-width: 600px) {
+    .calendar {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .day-header {
+      display: none;
+    }
+    .controls {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    #classFilters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .day {
+      min-height: 60px;
+    }
+  }
+
+  /* PRINT FRIENDLY */
+  @media print {
+    body {
+      margin: 0;
+      padding: 20px;
+      font-size: 12px;
+    }
+
+    #sidebar,
+    .controls,
+    #calendarGrid,
+    #eventDetails {
+      display: none !important;
+    }
+
+    #printYearView {
+      display: block !important;
+    }
+
+    #yearGrid {
+      page-break-inside: avoid;
+    }
+
+    .monthBlock {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .monthBlock h2 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+
+    .monthMiniGrid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      font-size: 10px;
+    }
+
+    .miniDay {
+      border: 1px solid #ddd;
+      min-height: 20px;
+      padding: 2px;
+    }
+
+    .miniDot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+  }
 </style>
-</head>
+ <!-- Collapsible Sidebar -->
+<button id="toggleSidebar" style="
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 9999;
+  padding: 8px 14px;
+  background: #444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+">
+  Instructions
+</button>
 
-<body>
+<div id="sidebar" style="
+  position: fixed;
+  right: -260px; /* hidden by default */
+  top: 0;
+  width: 260px;
+  height: 100%;
+  background: #f3f3f3;
+  border-left: 1px solid #ccc;
+  padding: 15px;
+  overflow-y: auto;
+  font-size: 13px;
+  transition: right 0.3s ease;
+  z-index: 9998;
+">
+  <h3 style="margin-top:0;">How to Edit Events</h3>
+  <p>1. Go to GitHub → your repository.</p>
+  <p>2. Open <strong>index.html</strong>.</p>
+  <p>3. Scroll to the section marked:</p>
+  <pre>>> EDIT EVENTS BELOW <<<</pre>
+  <p>4. Each event looks like:</p>
+  <pre>{ date: "2027-04-17", title: "Regatta", location: "Grafham", class: "F18", notes: "" }</pre>
+  <p>5. To add an event:</p>
+  <ul>
+    <li>Copy an event line</li>
+    <li>Paste below</li>
+    <li>Change date/title/location/class</li>
+  </ul>
+  <p>6. Save the file → GitHub Pages updates automatically.</p>
 
-<h1>2027 Sailing Events Calendar</h1>
+  <hr>
 
-<div class="controls">
-  <div class="month-nav">
-    <button id="prevMonth">&lt; Prev</button>
-    <span id="monthLabel"></span>
-    <button id="nextMonth">Next &gt;</button>
-  </div>
-  <div id="classFilters"></div>
+  <h3>Multi‑Day Events</h3>
+  <p>Use <strong>start</strong> and <strong>end</strong> dates:</p>
+  <pre>{ start: "2027-06-17", end: "2027-06-19", title: "Nationals", ... }</pre>
+
+  <hr>
+
+  <h3>Print Full Year</h3>
+  <p>Use the <strong>Print Full Year</strong> button to generate a one‑page printable calendar.</p>
+
+  <hr>
+
+  <h3>Colour Coding</h3>
+  <p>Colours are based on <strong>SCHRS handicap</strong> values.</p>
 </div>
 
+<script>
+// Sidebar toggle logic
+const sidebar = document.getElementById("sidebar");
+const toggleSidebar = document.getElementById("toggleSidebar");
+let sidebarOpen = false;
+
+toggleSidebar.addEventListener("click", () => {
+  sidebarOpen = !sidebarOpen;
+  sidebar.style.right = sidebarOpen ? "0" : "-260px";
+  toggleSidebar.textContent = sidebarOpen ? "Close" : "Instructions";
+});
+</script>
+<!-- MAIN CALENDAR UI -->
+
+<div class="controls">
+
+  <!-- Year Selector -->
+  <div>
+    <label for="yearSelector"><strong>Year:</strong></label>
+    <select id="yearSelector" style="padding:6px; margin-left:6px;"></select>
+  </div>
+
+  <!-- Month Navigation -->
+  <div class="month-nav">
+    <button id="prevMonth">&lt; Prev</button>
+    <span id="monthLabel" style="font-weight:bold; margin:0 10px;"></span>
+    <button id="nextMonth">Next &gt;</button>
+  </div>
+
+  <!-- Print Button -->
+  <button id="printYearBtn" style="padding:6px 12px;">
+    Print Full Year
+  </button>
+
+</div>
+
+<!-- Class Filters -->
+<div id="classFilters" style="margin-bottom:10px;"></div>
+
+<!-- Calendar Grid -->
 <div class="calendar" id="calendarGrid"></div>
 
+<!-- Event Details Panel -->
 <div id="eventDetails">
   <h3>Selected Day Events</h3>
   <div id="eventList">Click a day to view events.</div>
 </div>
 
+<!-- Full-Year Print View (hidden normally) -->
+<div id="printYearView" style="display:none; padding:20px;">
+  <h1 id="printYearTitle">Full Year Calendar</h1>
+  <div id="yearGrid" style="
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:20px;
+  "></div>
+</div>
 <script>
 // ===============================
-// CLASS LIST
+// YEAR + MONTH STATE
 // ===============================
-const classes = [
-  "A-Class","Dart 15","Dart 18","F18","F20",
-  "Hurricane","Nacra 15","Shearwater","Tornado","Unicorn"
-];
-
-// Generate CatFest events for all classes
-function catfest(date, location) {
-  return classes.map(cls => ({
-    date,
-    title: "Kingfisher CatFest",
-    location,
-    class: cls,
-    notes: "All classes"
-  }));
-}
-
-// ===============================
-// EVENTS
-// ===============================
-const events = [
-  { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", class: "F18", notes: "2-day event" },
-  { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", class: "Hurricane", notes: "SX + Classic fleets" },
-
-  ...catfest("2027-04-17", "Rutland Water"),
-  ...catfest("2027-04-18", "Rutland Water"),
-
-  ...catfest("2027-07-17", "Stokes Bay"),
-  ...catfest("2027-07-18", "Stokes Bay"),
-
-  ...catfest("2027-10-16", "Grafham Water"),
-  ...catfest("2027-10-17", "Grafham Water")
-];
-
-// ===============================
-// CALENDAR LOGIC
-// ===============================
-const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 let currentYear = 2027;
 let currentMonth = 0;
 
-const calendarGrid = document.getElementById("calendarGrid");
-const monthLabel = document.getElementById("monthLabel");
-const eventList = document.getElementById("eventList");
-const classFiltersContainer = document.getElementById("classFilters");
+const monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
+// ===============================
+// SCHRS‑CODED CLASS LIST
+// ===============================
+const classes = [
+  { name: "A-Class", schrs: 0.99 },
+  { name: "Dart 15", schrs: 1.22 },
+  { name: "Dart 18", schrs: 1.13 },
+  { name: "F18", schrs: 1.04 },
+  { name: "F20", schrs: 1.01 },
+  { name: "Hurricane", schrs: 1.09 },
+  { name: "Nacra 15", schrs: 1.07 },
+  { name: "Shearwater", schrs: 1.15 },
+  { name: "Tornado", schrs: 0.96 },
+  { name: "Unicorn", schrs: 1.19 }
+];
+
+// ===============================
+// MULTI‑DAY EXPANSION
+// ===============================
+function expandMultiDay(start, end) {
+  const dates = [];
+  let current = new Date(start);
+  const last = new Date(end);
+
+  while (current <= last) {
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+// ===============================
+// CATFEST GENERATOR (multi‑day)
+// ===============================
+function catfest(start, end, location) {
+  const days = expandMultiDay(start, end);
+  return days.flatMap(date =>
+    classes.map(cls => ({
+      date,
+      title: "Kingfisher CatFest",
+      location,
+      class: cls.name,
+      notes: "All classes"
+    }))
+  );
+}
+
+// ===============================
+// >>> EDIT EVENTS BELOW <<<
+// ===============================
+const events = [
+
+  // Single-day events
+  { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", class: "F18", notes: "2-day event" },
+  { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", class: "Hurricane", notes: "SX + Classic fleets" },
+
+  // Multi-day CatFest events
+  ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
+  ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
+  ...catfest("2027-10-16", "2027-10-17", "Grafham Water")
+];
+
+// ===============================
+// CLASS FILTERS
+// ===============================
 const activeClasses = {};
-classes.forEach(c => activeClasses[c] = true);
+classes.forEach(c => activeClasses[c.name] = true);
+
+const classFiltersContainer = document.getElementById("classFilters");
 
 function initClassFilters() {
   classes.forEach(cls => {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = true;
+
     checkbox.addEventListener("change", () => {
-      activeClasses[cls] = checkbox.checked;
+      activeClasses[cls.name] = checkbox.checked;
       renderCalendar();
     });
 
     const label = document.createElement("label");
     label.style.marginRight = "10px";
     label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(" " + cls));
+    label.appendChild(document.createTextNode(" " + cls.name));
 
     classFiltersContainer.appendChild(label);
   });
 }
 
+// ===============================
+// YEAR SELECTOR
+// ===============================
+const yearSelector = document.getElementById("yearSelector");
+
+for (let y = 2025; y <= 2035; y++) {
+  const opt = document.createElement("option");
+  opt.value = y;
+  opt.textContent = y;
+  if (y === currentYear) opt.selected = true;
+  yearSelector.appendChild(opt);
+}
+
+yearSelector.addEventListener("change", () => {
+  currentYear = parseInt(yearSelector.value);
+  renderCalendar();
+});
+
+// ===============================
+// EVENT LOOKUP
+// ===============================
 function getEventsForDate(dateStr) {
   return events.filter(ev => ev.date === dateStr && activeClasses[ev.class]);
 }
 
+// ===============================
+// CALENDAR RENDERING
+// ===============================
+const calendarGrid = document.getElementById("calendarGrid");
+const monthLabel = document.getElementById("monthLabel");
+const eventList = document.getElementById("eventList");
+
 function renderCalendar() {
   calendarGrid.innerHTML = "";
 
+  // Day headers
   ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
     const header = document.createElement("div");
     header.className = "day-header";
@@ -129,17 +412,20 @@ function renderCalendar() {
 
   monthLabel.textContent = monthNames[currentMonth] + " " + currentYear;
 
+  // Empty cells
   for (let i = 0; i < startWeekday; i++) {
     const emptyCell = document.createElement("div");
     emptyCell.className = "day empty";
     calendarGrid.appendChild(emptyCell);
   }
 
+  // Actual days
   for (let day = 1; day <= daysInMonth; day++) {
     const cell = document.createElement("div");
     cell.className = "day";
 
     const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
     const dayNumber = document.createElement("div");
     dayNumber.className = "day-number";
     dayNumber.textContent = day;
@@ -149,10 +435,12 @@ function renderCalendar() {
 
     if (dayEvents.length > 0) {
       dayEvents.forEach(ev => {
+        const schrs = classes.find(c => c.name === ev.class).schrs;
+        const hue = 240 - ((schrs - 0.95) * 400);
+
         const dot = document.createElement("span");
         dot.className = "event-dot";
-        const idx = classes.indexOf(ev.class);
-        dot.style.backgroundColor = `hsl(${idx * 36}, 70%, 50%)`;
+        dot.style.backgroundColor = `hsl(${hue}, 70%, 50%)`;
         cell.appendChild(dot);
       });
 
@@ -170,6 +458,9 @@ function renderCalendar() {
   }
 }
 
+// ===============================
+// EVENT DETAILS PANEL
+// ===============================
 function showEvents(dateStr, dayEvents) {
   const dateObj = new Date(dateStr);
   let html = `<strong>${dateObj.toDateString()}</strong><br>`;
@@ -187,6 +478,9 @@ function showEvents(dateStr, dayEvents) {
   eventList.innerHTML = html;
 }
 
+// ===============================
+// MONTH NAVIGATION
+// ===============================
 document.getElementById("prevMonth").addEventListener("click", () => {
   currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
   renderCalendar();
@@ -197,10 +491,87 @@ document.getElementById("nextMonth").addEventListener("click", () => {
   renderCalendar();
 });
 
+// ===============================
+// FULL-YEAR PRINT VIEW
+// ===============================
+function buildPrintYearView() {
+  const yearGrid = document.getElementById("yearGrid");
+  const printTitle = document.getElementById("printYearTitle");
+
+  printTitle.textContent = currentYear + " Sailing Calendar – Full Year";
+  yearGrid.innerHTML = "";
+
+  for (let m = 0; m < 12; m++) {
+    const block = document.createElement("div");
+    block.className = "monthBlock";
+
+    const title = document.createElement("h2");
+    title.textContent = monthNames[m] + " " + currentYear;
+    block.appendChild(title);
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "monthMiniGrid";
+
+    ["S","M","T","W","T","F","S"].forEach(d => {
+      const hd = document.createElement("div");
+      hd.textContent = d;
+      hd.style.fontWeight = "bold";
+      miniGrid.appendChild(hd);
+    });
+
+    const firstDay = new Date(currentYear, m, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startWeekday; i++) {
+      miniGrid.appendChild(document.createElement("div"));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "miniDay";
+
+      const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayEvents = events.filter(ev => ev.date === dateStr);
+
+      cell.textContent = d + " ";
+
+      dayEvents.forEach(ev => {
+        const schrs = classes.find(c => c.name === ev.class).schrs;
+        const hue = 240 - ((schrs - 0.95) * 400);
+
+        const dot = document.createElement("span");
+        dot.className = "miniDot";
+        dot.style.backgroundColor = `hsl(${hue}, 70%, 50%)`;
+        cell.appendChild(dot);
+      });
+
+      miniGrid.appendChild(cell);
+    }
+
+    block.appendChild(miniGrid);
+    yearGrid.appendChild(block);
+  }
+}
+
+// Print button
+document.getElementById("printYearBtn").addEventListener("click", () => {
+  buildPrintYearView();
+  window.print();
+});
+
+// ===============================
+// INITIALISE EVERYTHING
+// ===============================
 initClassFilters();
 renderCalendar();
-
 </script>
+<!-- FOOTER -->
+<footer style="margin-top:40px; font-size:12px; color:#666;">
+  Last updated: 14 September 2026
+</footer>
 
 </body>
 </html>
+ 
+</head>
