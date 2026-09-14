@@ -439,7 +439,36 @@ function renderCalendar() {
   // Actual days
   for (let day = 1; day <= daysInMonth; day++) {
     const cell = document.createElement("div");
-    cell.className = "day";
+    cell.className = "day";cell.addEventListener("dragover", (e) => {
+  e.preventDefault();
+});
+
+cell.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const ev = JSON.parse(e.dataTransfer.getData("event"));
+
+  // Update event date
+  ev.date = dateStr;
+
+  // If event is in default events, update it
+  const idx = events.indexOf(ev);
+  if (idx !== -1) events[idx].date = dateStr;
+
+  // If event is in user events, update it
+  const uidx = userEvents.findIndex(x => 
+    x.title === ev.title &&
+    x.location === ev.location &&
+    x.class === ev.class &&
+    x.notes === ev.notes
+  );
+  if (uidx !== -1) {
+    userEvents[uidx].date = dateStr;
+    localStorage.setItem("userEvents", JSON.stringify(userEvents));
+  }
+
+  renderCalendar();
+});
+
 const addBtn = document.createElement("button");
 addBtn.textContent = "+";
 addBtn.style.cssText = `
@@ -468,7 +497,11 @@ if (dayEvents.length > 0) {
     const evDiv = document.createElement("div");
     evDiv.style.fontSize = "10px";
     evDiv.style.marginTop = "2px";
-    evDiv.innerHTML = `
+   evDiv.draggable = true;evDiv.addEventListener("dragstart", (e) => {
+  e.dataTransfer.setData("event", JSON.stringify(ev));
+});
+
+ evDiv.innerHTML = `
       <span style="color:${classColors[ev.class]}; font-weight:bold;">
         ${ev.class}
       </span>
@@ -476,15 +509,6 @@ if (dayEvents.length > 0) {
       <br>
       <span style="opacity:0.7;">${ev.location}</span>
     `;
-const editBtn = document.createElement("span");
-editBtn.textContent = " ✎";
-editBtn.style.cursor = "pointer";
-editBtn.style.color = classColors[ev.class];
-editBtn.onclick = (e) => {
-  e.stopPropagation();
-  openEventModal(dateStr, ev);
-};
-evDiv.appendChild(editBtn);
 
     // Edit button
     const editBtn = document.createElement("span");
@@ -496,6 +520,24 @@ evDiv.appendChild(editBtn);
       openEventModal(dateStr, ev);
     };
     evDiv.appendChild(editBtn);
+const deleteBtn = document.createElement("span");
+deleteBtn.textContent = " 🗑️";
+deleteBtn.style.cursor = "pointer";
+deleteBtn.style.color = "red";
+deleteBtn.onclick = (e) => {
+  e.stopPropagation();
+
+  // Remove from userEvents if user-created
+  userEvents = userEvents.filter(x => x !== ev);
+  localStorage.setItem("userEvents", JSON.stringify(userEvents));
+
+  // Remove from default events if needed
+  const idx = events.indexOf(ev);
+  if (idx !== -1) events.splice(idx, 1);
+
+  renderCalendar();
+};
+evDiv.appendChild(deleteBtn);
 
     cell.appendChild(evDiv);
   });
