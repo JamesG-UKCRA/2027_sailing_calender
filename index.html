@@ -234,7 +234,7 @@
     <div style="
       background: #fff;
       padding: 20px;
-      width: 300px;
+      width: 320px;
       border-radius: 6px;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
     ">
@@ -248,6 +248,9 @@
 
       <label>Location:</label>
       <input id="modalLocationInput" type="text" style="width:100%; margin-bottom:10px;">
+
+      <label>Class:</label>
+      <select id="modalClassInput" style="width:100%; margin-bottom:10px;"></select>
 
       <label>Notes:</label>
       <textarea id="modalNotesInput" style="width:100%; height:60px; margin-bottom:10px;"></textarea>
@@ -423,14 +426,23 @@
           const ev = JSON.parse(e.dataTransfer.getData("event"));
           ev.date = dateStr;
 
-          const idx = events.indexOf(ev);
-          if (idx !== -1) events[idx].date = dateStr;
+          const idx = events.findIndex(x =>
+            x.title === ev.title &&
+            x.location === ev.location &&
+            x.class === ev.class &&
+            x.notes === ev.notes &&
+            x.date === ev.date
+          );
+          if (idx !== -1) {
+            events[idx].date = dateStr;
+          }
 
           const uidx = userEvents.findIndex(x =>
             x.title === ev.title &&
             x.location === ev.location &&
             x.class === ev.class &&
-            x.notes === ev.notes
+            x.notes === ev.notes &&
+            x.date === ev.date
           );
           if (uidx !== -1) {
             userEvents[uidx].date = dateStr;
@@ -502,11 +514,29 @@
             deleteBtn.style.color = "red";
             deleteBtn.onclick = e => {
               e.stopPropagation();
-              userEvents = userEvents.filter(x => x !== ev);
-              localStorage.setItem("userEvents", JSON.stringify(userEvents));
 
-              const idx = events.indexOf(ev);
-              if (idx !== -1) events.splice(idx, 1);
+              const uidx = userEvents.findIndex(x =>
+                x.title === ev.title &&
+                x.location === ev.location &&
+                x.class === ev.class &&
+                x.notes === ev.notes &&
+                x.date === ev.date
+              );
+              if (uidx !== -1) {
+                userEvents.splice(uidx, 1);
+                localStorage.setItem("userEvents", JSON.stringify(userEvents));
+              }
+
+              const idx = events.findIndex(x =>
+                x.title === ev.title &&
+                x.location === ev.location &&
+                x.class === ev.class &&
+                x.notes === ev.notes &&
+                x.date === ev.date
+              );
+              if (idx !== -1) {
+                events.splice(idx, 1);
+              }
 
               renderCalendar();
             };
@@ -626,18 +656,36 @@
       document.getElementById("modalLocationInput").value = existingEvent?.location || "";
       document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
 
+      const classSelect = document.getElementById("modalClassInput");
+      classSelect.innerHTML = "";
+      classes.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = c.name;
+        classSelect.appendChild(opt);
+      });
+      classSelect.value = existingEvent?.class || classes[0].name;
+
       document.getElementById("modalSaveBtn").onclick = () => {
         const newEvent = {
           date: document.getElementById("modalDate").value,
           title: document.getElementById("modalTitleInput").value,
           location: document.getElementById("modalLocationInput").value,
-          class: existingEvent?.class || "User Event",
+          class: document.getElementById("modalClassInput").value,
           notes: document.getElementById("modalNotesInput").value
         };
 
         if (existingEvent) {
-          const idx = userEvents.indexOf(existingEvent);
-          if (idx !== -1) userEvents[idx] = newEvent;
+          const idx = userEvents.findIndex(x =>
+            x.title === existingEvent.title &&
+            x.location === existingEvent.location &&
+            x.class === existingEvent.class &&
+            x.notes === existingEvent.notes &&
+            x.date === existingEvent.date
+          );
+          if (idx !== -1) {
+            userEvents[idx] = newEvent;
+          }
         } else {
           userEvents.push(newEvent);
         }
