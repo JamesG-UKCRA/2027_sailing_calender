@@ -8,7 +8,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      margin-right: 0; /* Sidebar removed */
+      margin-right: 0;
     }
 
     .controls {
@@ -305,7 +305,6 @@
 
     /* User Events */
     let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
-
     /* Event Lookup */
     function getEventsForDate(dateStr) {
       return [
@@ -510,7 +509,6 @@
       currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
       renderCalendar();
     });
-
     /* Print Year View */
     function buildPrintYearView() {
       const yearGrid = document.getElementById("yearGrid");
@@ -552,4 +550,89 @@
           const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
           const dayEvents = events.filter(ev => ev.date === dateStr);
 
-          cell.textContent = d +
+          cell.textContent = d + " ";
+
+          dayEvents.forEach(ev => {
+            const dot = document.createElement("span");
+            dot.className = "miniDot";
+            dot.style.backgroundColor = classColors[ev.class];
+            cell.appendChild(dot);
+          });
+
+          miniGrid.appendChild(cell);
+        }
+
+        block.appendChild(miniGrid);
+        yearGrid.appendChild(block);
+      }
+    }
+
+    document.getElementById("printYearBtn").addEventListener("click", () => {
+      buildPrintYearView();
+      window.print();
+    });
+
+    /* Event Modal */
+    function openEventModal(dateStr, existingEvent = null) {
+      const modal = document.getElementById("eventModal");
+      modal.style.display = "flex";
+
+      document.getElementById("modalDate").value = dateStr;
+      document.getElementById("modalTitleInput").value = existingEvent?.title || "";
+      document.getElementById("modalLocationInput").value = existingEvent?.location || "";
+      document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
+
+      /* Populate class dropdown */
+      const classSelect = document.getElementById("modalClassInput");
+      classSelect.innerHTML = "";
+      classes.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = c.name;
+        classSelect.appendChild(opt);
+      });
+      classSelect.value = existingEvent?.class || classes[0].name;
+
+      /* Save event */
+      document.getElementById("modalSaveBtn").onclick = () => {
+        const newEvent = {
+          date: document.getElementById("modalDate").value,
+          title: document.getElementById("modalTitleInput").value,
+          location: document.getElementById("modalLocationInput").value,
+          class: document.getElementById("modalClassInput").value,
+          notes: document.getElementById("modalNotesInput").value
+        };
+
+        if (existingEvent) {
+          const idx = userEvents.findIndex(x =>
+            x.title === existingEvent.title &&
+            x.location === existingEvent.location &&
+            x.class === existingEvent.class &&
+            x.notes === existingEvent.notes &&
+            x.date === existingEvent.date
+          );
+          if (idx !== -1) {
+            userEvents[idx] = newEvent;
+          }
+        } else {
+          userEvents.push(newEvent);
+        }
+
+        localStorage.setItem("userEvents", JSON.stringify(userEvents));
+        modal.style.display = "none";
+        renderCalendar();
+      };
+
+      /* Cancel */
+      document.getElementById("modalCancelBtn").onclick = () => {
+        modal.style.display = "none";
+      };
+    }
+
+    /* Init */
+    initClassFilters();
+    renderCalendar();
+  </script>
+
+</body>
+</html>
