@@ -3,38 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <title>2027 Sailing Calendar</title>
-
 <style>
   body {
     font-family: Arial, sans-serif;
     margin: 20px;
     margin-right: 280px; /* space for sidebar */
   }
-
   .controls {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
     margin-bottom: 10px;
   }
-
   .month-nav button {
     padding: 6px 12px;
   }
-
   .calendar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
   }
-
   .day-header {
     font-weight: bold;
     text-align: center;
     padding: 4px 0;
     border-bottom: 1px solid #ccc;
   }
-
   .day {
     border: 1px solid #ccc;
     min-height: 70px;
@@ -42,11 +36,9 @@
     cursor: pointer;
     background: #fafafa;
   }
-
   .day-number {
     font-weight: bold;
   }
-
   .event-dot {
     width: 8px;
     height: 8px;
@@ -388,7 +380,6 @@ function initClassFilters() {
     classFiltersContainer.appendChild(label);
   });
 }
-
 // ===============================
 // YEAR SELECTOR
 // ===============================
@@ -505,7 +496,6 @@ cell.appendChild(addBtn);
 
     const dayEvents = getEventsForDate(dateStr);
 if (dayEvents.length > 0) {
-
   dayEvents.forEach(ev => {
     const evDiv = document.createElement("div");
     evDiv.style.fontSize = "10px";
@@ -565,7 +555,6 @@ evDiv.appendChild(deleteBtn);
     calendarGrid.appendChild(cell);
   }
 }
-
 // ===============================
 // EVENT DETAILS PANEL
 // ===============================
@@ -665,7 +654,6 @@ document.getElementById("printYearBtn").addEventListener("click", () => {
   buildPrintYearView();
   window.print();
 });
-
 // ===============================
 // INITIALISE EVERYTHING
 // ===============================
@@ -762,8 +750,6 @@ renderCalendar();
     <button id="modalCancelBtn" style="padding:6px 12px; float:right;">Cancel</button>
   </div>
 </div>
-
 </body>
 </html>
- 
 </head>
