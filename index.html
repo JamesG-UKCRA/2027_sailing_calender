@@ -277,9 +277,7 @@
 
     /* Default Events */
     const events = [
-      { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", classes: ["F18"], notes: "2-day event" },
-      { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", classes: ["Hurricane"], notes: "SX + Classic fleets" },
-
+     
       ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
       ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
       ...catfest("2027-10-16", "2027-10-17", "Grafham Water")
@@ -313,12 +311,25 @@
     /* User Events */
     let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
     /* Event Lookup */
-    function getEventsForDate(dateStr) {
-      return [
-        ...events.filter(ev => ev.date === dateStr && ev.classes.some(c => activeClasses[c])),
-        ...userEvents.filter(ev => ev.date === dateStr && ev.classes.some(c => activeClasses[c]))
-      ];
-    }
+   let searchQuery = "";
+function getEventsForDate(dateStr) {
+  const all = [
+    ...events,
+    ...userEvents
+  ];
+
+  return all.filter(ev =>
+    ev.date === dateStr &&
+    ev.classes.some(c => activeClasses[c]) &&
+    (
+      searchQuery === "" ||
+      ev.title.toLowerCase().includes(searchQuery) ||
+      ev.location.toLowerCase().includes(searchQuery) ||
+      ev.notes.toLowerCase().includes(searchQuery) ||
+      ev.classes.some(c => c.toLowerCase().includes(searchQuery))
+    )
+  );
+}
 
     /* Calendar Rendering */
     const calendarGrid = document.getElementById("calendarGrid");
@@ -504,6 +515,11 @@
       currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
       renderCalendar();
     });
+   document.getElementById("eventSearchInput").addEventListener("input", e => {
+  searchQuery = e.target.value.toLowerCase();
+  renderCalendar();
+});
+ 
     /* Print Year View */
     function buildPrintYearView() {
       const yearGrid = document.getElementById("yearGrid");
