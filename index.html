@@ -8,7 +8,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
-      margin-right: 280px;
+      margin-right: 0; /* Sidebar removed */
     }
 
     .controls {
@@ -82,7 +82,6 @@
         font-size: 12px;
       }
 
-      #sidebar,
       .controls,
       #calendarGrid,
       #eventDetails {
@@ -131,66 +130,6 @@
 </head>
 
 <body>
-  <!-- Sidebar Toggle -->
-  <button id="toggleSidebar" style="
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 9999;
-    padding: 8px 14px;
-    background: #444;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px 0 0 4px;
-  ">
-    Instructions
-  </button>
-
-  <!-- Sidebar -->
-  <div id="sidebar" style="
-    position: fixed;
-    right: -260px;
-    top: 0;
-    width: 260px;
-    height: 100%;
-    background: #f3f3f3;
-    border-left: 1px solid #ccc;
-    padding: 15px;
-    overflow-y: auto;
-    font-size: 13px;
-    transition: right 0.3s ease;
-    z-index: 9998;
-  ">
-    <h3 style="margin-top:0;">How to Edit Events</h3>
-    <p>Open <strong>index.html</strong> and scroll to:</p>
-    <pre>>> EDIT EVENTS BELOW <<<</pre>
-
-    <p>Each event looks like:</p>
-    <pre>{ date: "2027-04-17", title: "Regatta", location: "Grafham", class: "F18", notes: "" }</pre>
-
-    <p>To add an event:</p>
-    <ul>
-      <li>Copy an event line</li>
-      <li>Paste below</li>
-      <li>Edit date/title/location/class</li>
-    </ul>
-
-    <hr>
-
-    <h3>Multi‑Day Events</h3>
-    <pre>{ start: "2027-06-17", end: "2027-06-19", title: "Nationals", ... }</pre>
-
-    <hr>
-
-    <h3>Print Full Year</h3>
-    <p>Use the <strong>Print Full Year</strong> button.</p>
-
-    <hr>
-
-    <h3>Colour Coding</h3>
-    <p>Colours follow SCHRS handicap values.</p>
-  </div>
 
   <!-- Controls -->
   <div class="controls">
@@ -266,17 +205,6 @@
   </div>
 
   <script>
-    /* Sidebar Toggle */
-    const sidebar = document.getElementById("sidebar");
-    const toggleSidebar = document.getElementById("toggleSidebar");
-    let sidebarOpen = false;
-
-    toggleSidebar.addEventListener("click", () => {
-      sidebarOpen = !sidebarOpen;
-      sidebar.style.right = sidebarOpen ? "0" : "-260px";
-      toggleSidebar.textContent = sidebarOpen ? "Close" : "Instructions";
-    });
-
     /* Calendar State */
     let currentYear = 2027;
     let currentMonth = 0;
@@ -624,85 +552,4 @@
           const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
           const dayEvents = events.filter(ev => ev.date === dateStr);
 
-          cell.textContent = d + " ";
-
-          dayEvents.forEach(ev => {
-            const dot = document.createElement("span");
-            dot.className = "miniDot";
-            dot.style.backgroundColor = classColors[ev.class];
-            cell.appendChild(dot);
-          });
-
-          miniGrid.appendChild(cell);
-        }
-
-        block.appendChild(miniGrid);
-        yearGrid.appendChild(block);
-      }
-    }
-
-    document.getElementById("printYearBtn").addEventListener("click", () => {
-      buildPrintYearView();
-      window.print();
-    });
-
-    /* Event Modal */
-    function openEventModal(dateStr, existingEvent = null) {
-      const modal = document.getElementById("eventModal");
-      modal.style.display = "flex";
-
-      document.getElementById("modalDate").value = dateStr;
-      document.getElementById("modalTitleInput").value = existingEvent?.title || "";
-      document.getElementById("modalLocationInput").value = existingEvent?.location || "";
-      document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
-
-      const classSelect = document.getElementById("modalClassInput");
-      classSelect.innerHTML = "";
-      classes.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.name;
-        opt.textContent = c.name;
-        classSelect.appendChild(opt);
-      });
-      classSelect.value = existingEvent?.class || classes[0].name;
-
-      document.getElementById("modalSaveBtn").onclick = () => {
-        const newEvent = {
-          date: document.getElementById("modalDate").value,
-          title: document.getElementById("modalTitleInput").value,
-          location: document.getElementById("modalLocationInput").value,
-          class: document.getElementById("modalClassInput").value,
-          notes: document.getElementById("modalNotesInput").value
-        };
-
-        if (existingEvent) {
-          const idx = userEvents.findIndex(x =>
-            x.title === existingEvent.title &&
-            x.location === existingEvent.location &&
-            x.class === existingEvent.class &&
-            x.notes === existingEvent.notes &&
-            x.date === existingEvent.date
-          );
-          if (idx !== -1) {
-            userEvents[idx] = newEvent;
-          }
-        } else {
-          userEvents.push(newEvent);
-        }
-
-        localStorage.setItem("userEvents", JSON.stringify(userEvents));
-        modal.style.display = "none";
-        renderCalendar();
-      };
-
-      document.getElementById("modalCancelBtn").onclick = () => {
-        modal.style.display = "none";
-      };
-    }
-
-    /* Init */
-    initClassFilters();
-    renderCalendar();
-  </script>
-</body>
-</html>
+          cell.textContent = d +
