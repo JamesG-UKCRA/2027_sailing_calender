@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>2027 Sailing Calendar</title>
+
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  .controls { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px; }
+  .month-nav button { padding: 6px 12px; }
+  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .day-header { font-weight: bold; text-align: center; padding: 4px 0; border-bottom: 1px solid #ccc; }
+  .day { border: 1px solid #ccc; min-height: 70px; padding: 4px; cursor: pointer; background: #fafafa; }
+  .day-number { font-weight: bold; }
+  .event-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+  .event-summary { font-size: 11px; margin-top: 2px; }
+  #eventDetails { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+</style>
+</head>
+
+<body>
+
+<h1>2027 Sailing Events Calendar</h1>
+
+<div class="controls">
+  <div class="month-nav">
+    <button id="prevMonth">&lt; Prev</button>
+    <span id="monthLabel"></span>
+    <button id="nextMonth">Next &gt;</button>
+  </div>
+  <div id="classFilters"></div>
+</div>
+
+<div class="calendar" id="calendarGrid"></div>
+
+<div id="eventDetails">
+  <h3>Selected Day Events</h3>
+  <div id="eventList">Click a day to view events.</div>
+</div>
+
+<script>
+// ===============================
+// CLASS LIST
+// ===============================
+const classes = [
+  "A-Class","Dart 15","Dart 18","F18","F20",
+  "Hurricane","Nacra 15","Shearwater","Tornado","Unicorn"
+];
+
+// Generate CatFest events for all classes
+function catfest(date, location) {
+  return classes.map(cls => ({
+    date,
+    title: "Kingfisher CatFest",
+    location,
+    class: cls,
+    notes: "All classes"
+  }));
+}
+
+// ===============================
+// EVENTS
+// ===============================
+const events = [
+  { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", class: "F18", notes: "2-day event" },
+  { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", class: "Hurricane", notes: "SX + Classic fleets" },
+
+  ...catfest("2027-04-17", "Rutland Water"),
+  ...catfest("2027-04-18", "Rutland Water"),
+
+  ...catfest("2027-07-17", "Stokes Bay"),
+  ...catfest("2027-07-18", "Stokes Bay"),
+
+  ...catfest("2027-10-16", "Grafham Water"),
+  ...catfest("2027-10-17", "Grafham Water")
+];
+
+// ===============================
+// CALENDAR LOGIC
+// ===============================
+const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+let currentYear = 2027;
+let currentMonth = 0;
+
+const calendarGrid = document.getElementById("calendarGrid");
+const monthLabel = document.getElementById("monthLabel");
+const eventList = document.getElementById("eventList");
+const classFiltersContainer = document.getElementById("classFilters");
+
+const activeClasses = {};
+classes.forEach(c => activeClasses[c] = true);
+
+function initClassFilters() {
+  classes.forEach(cls => {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+    checkbox.addEventListener("change", () => {
+      activeClasses[cls] = checkbox.checked;
+      renderCalendar();
+    });
+
+    const label = document.createElement("label");
+    label.style.marginRight = "10px";
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(" " + cls));
+
+    classFiltersContainer.appendChild(label);
+  });
+}
+
+function getEventsForDate(dateStr) {
+  return events.filter(ev => ev.date === dateStr && activeClasses[ev.class]);
+}
+
+function renderCalendar() {
+  calendarGrid.innerHTML = "";
+
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
+    const header = document.createElement("div");
+    header.className = "day-header";
+    header.textContent = d;
+    calendarGrid.appendChild(header);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  monthLabel.textContent = monthNames[currentMonth] + " " + currentYear;
+
+  for (let i = 0; i < startWeekday; i++) {
+    const emptyCell = document.createElement("div");
+    emptyCell.className = "day empty";
+    calendarGrid.appendChild(emptyCell);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const dayNumber = document.createElement("div");
+    dayNumber.className = "day-number";
+    dayNumber.textContent = day;
+    cell.appendChild(dayNumber);
+
+    const dayEvents = getEventsForDate(dateStr);
+
+    if (dayEvents.length > 0) {
+      dayEvents.forEach(ev => {
+        const dot = document.createElement("span");
+        dot.className = "event-dot";
+        const idx = classes.indexOf(ev.class);
+        dot.style.backgroundColor = `hsl(${idx * 36}, 70%, 50%)`;
+        cell.appendChild(dot);
+      });
+
+      const summary = document.createElement("div");
+      summary.className = "event-summary";
+      summary.textContent = dayEvents.length + " event(s)";
+      cell.appendChild(summary);
+
+      cell.addEventListener("click", () => showEvents(dateStr, dayEvents));
+    } else {
+      cell.addEventListener("click", () => showEvents(dateStr, []));
+    }
+
+    calendarGrid.appendChild(cell);
+  }
+}
+
+function showEvents(dateStr, dayEvents) {
+  const dateObj = new Date(dateStr);
+  let html = `<strong>${dateObj.toDateString()}</strong><br>`;
+
+  if (dayEvents.length === 0) {
+    html += "No events for selected classes.";
+  } else {
+    html += "<ul>";
+    dayEvents.forEach(ev => {
+      html += `<li><strong>${ev.title}</strong> (${ev.class}) – ${ev.location}<br>${ev.notes}</li>`;
+    });
+    html += "</ul>";
+  }
+
+  eventList.innerHTML = html;
+}
+
+document.getElementById("prevMonth").addEventListener("click", () => {
+  currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  renderCalendar();
+});
+
+document.getElementById("nextMonth").addEventListener("click", () => {
+  currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+  renderCalendar();
+});
+
+initClassFilters();
+renderCalendar();
+
+</script>
+
+</body>
+</html>
