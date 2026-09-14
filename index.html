@@ -1,3 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>2027 Sailing Calendar</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    margin-right: 280px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .month-nav button {
+    padding: 6px 12px;
+  }
+
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .day-header {
+    font-weight: bold;
+    text-align: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .day {
+    border: 1px solid #ccc;
+    min-height: 70px;
+    padding: 4px;
+    cursor: pointer;
+    background: #fafafa;
+  }
+
+  .day-number {
+    font-weight: bold;
+  }
+
+  #eventDetails {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+
+  @media (max-width: 600px) {
+    .calendar {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .day-header {
+      display: none;
+    }
+    .controls {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    #classFilters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .day {
+      min-height: 60px;
+    }
+  }
+
+  @media print {
+    body {
+      margin: 0;
+      padding: 20px;
+      font-size: 12px;
+    }
+
+    #sidebar,
+    .controls,
+    #calendarGrid,
+    #eventDetails {
+      display: none !important;
+    }
+
+    #printYearView {
+      display: block !important;
+    }
+
+    #yearGrid {
+      page-break-inside: avoid;
+    }
+
+    .monthBlock {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .monthBlock h2 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+
+    .monthMiniGrid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      font-size: 10px;
+    }
+
+    .miniDay {
+      border: 1px solid #ddd;
+      min-height: 20px;
+      padding: 2px;
+    }
+
+    .miniDot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- Sidebar Toggle -->
+<button id="toggleSidebar" style="
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 9999;
+  padding: 8px 14px;
+  background: #444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+">
+  Instructions
+</button>
+
+<!-- Sidebar -->
+<div id="sidebar" style="
+  position: fixed;
+  right: -260px;
+  top: 0;
+  width: 260px;
+  height: 100%;
+  background: #f3f3f3;
+  border-left: 1px solid #ccc;
+  padding: 15px;
+  overflow-y: auto;
+  font-size: 13px;
+  transition: right 0.3s ease;
+  z-index: 9998;
+">
+  <h3 style="margin-top:0;">How to Edit Events</h3>
+  <p>Open <strong>index.html</strong> and scroll to:</p>
+  <pre>>> EDIT EVENTS BELOW <<<</pre>
+
+  <p>Each event looks like:</p>
+  <pre>{ date: "2027-04-17", title: "Regatta", location: "Grafham", class: "F18", notes: "" }</pre>
+
+  <p>To add an event:</p>
+  <ul>
+    <li>Copy an event line</li>
+    <li>Paste below</li>
+    <li>Edit date/title/location/class</li>
+  </ul>
+
+  <hr>
+
+  <h3>Multi‑Day Events</h3>
+  <pre>{ start: "2027-06-17", end: "2027-06-19", title: "Nationals", ... }</pre>
+
+  <hr>
+
+  <h3>Print Full Year</h3>
+  <p>Use the <strong>Print Full Year</strong> button.</p>
+
+  <hr>
+
+  <h3>Colour Coding</h3>
+  <p>Colours follow SCHRS handicap values.</p>
+</div>
+
+<script>
+/* Sidebar Toggle */
+const sidebar = document.getElementById("sidebar");
+const toggleSidebar = document.getElementById("toggleSidebar");
+let sidebarOpen = false;
+
+toggleSidebar.addEventListener("click", () => {
+  sidebarOpen = !sidebarOpen;
+  sidebar.style.right = sidebarOpen ? "0" : "-260px";
+  toggleSidebar.textContent = sidebarOpen ? "Close" : "Instructions";
+});
+
+/* Calendar State */
+let currentYear = 2027;
+let currentMonth = 0;
+
+const monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
+/* Class List */
+const classes = [
+  { name: "A-Class", schrs: 0.99 },
+  { name: "Dart 15", schrs: 1.22 },
+  { name: "Dart 18", schrs: 1.13 },
+  { name: "F18", schrs: 1.04 },
+  { name: "F20", schrs: 1.01 },
+  { name: "Hurricane", schrs: 1.09 },
+  { name: "Nacra 15", schrs: 1.07 },
+  { name: "Shearwater", schrs: 1.15 },
+  { name: "Tornado", schrs: 0.96 },
+  { name: "Unicorn", schrs: 1.19 }
+];
+
+const classColors = {
+  "A-Class": "#0074D9",
+  "Dart 15": "#FF4136",
+  "Dart 18": "#2ECC40",
+  "F18": "#FF851B",
+  "F20": "#B10DC9",
+  "Hurricane": "#39CCCC",
+  "Nacra 15": "#85144b",
+  "Shearwater": "#3D9970",
+  "Tornado": "#001f3f",
+  "Unicorn": "#F012BE"
+};
+
+/* Multi-Day Expansion */
+function expandMultiDay(start, end) {
+  const dates = [];
+  let current = new Date(start);
+  const last = new Date(end);
+
+  while (current <= last) {
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+/* CatFest Generator */
+function catfest(start, end, location) {
+  const days = expandMultiDay(start, end);
+  return days.flatMap(date =>
+    classes.map(cls => ({
+      date,
+      title: "Kingfisher CatFest",
+      location,
+      class: cls.name,
+      notes: "All classes"
+    }))
+  );
+}
+
+/* Default Events */
+const events = [
+  { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", class: "F18", notes: "2-day event" },
+  { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", class: "Hurricane", notes: "SX + Classic fleets" },
+
+  ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
+  ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
+  ...catfest("2027-10-16", "2027-10-17", "Grafham Water")
+];
+
+/* Class Filters */
+const activeClasses = {};
+classes.forEach(c => activeClasses[c.name] = true);
+
+function initClassFilters() {
+  const container = document.getElementById("classFilters");
+  classes.forEach(cls => {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+
+    checkbox.addEventListener("change", () => {
+      activeClasses[cls.name] = checkbox.checked;
+      renderCalendar();
+    });
+
+    const label = document.createElement("label");
+    label.style.marginRight = "10px";
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(" " + cls.name));
+
+    container.appendChild(label);
+  });
+}
+
+/* User Events */
+let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
+
+/* Event Lookup */
+function getEventsForDate(dateStr) {
+  return [
+    ...events.filter(ev => ev.date === dateStr && activeClasses[ev.class]),
+    ...userEvents.filter(ev => ev.date === dateStr && activeClasses[ev.class])
+  ];
+}
+
+/* Calendar Rendering */
+const calendarGrid = document.getElementById("calendarGrid");
+const monthLabel = document.getElementById("monthLabel");
+const eventList = document.getElementById("eventList");
+
+function renderCalendar() {
+  calendarGrid.innerHTML = "";
+
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
+    const header = document.createElement("div");
+    header.className = "day-header";
+    header.textContent = d;
+    calendarGrid.appendChild(header);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  monthLabel.textContent = monthNames[currentMonth] + " " + currentYear;
+
+  for (let i = 0; i < startWeekday; i++) {
+    const emptyCell = document.createElement("div");
+    emptyCell.className = "day empty";
+    calendarGrid.appendChild(emptyCell);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
+    /* Drag & Drop */
+    cell.addEventListener("dragover", e => e.preventDefault());
+    cell.addEventListener("drop", e => {
+      e.preventDefault();
+      const ev = JSON.parse(e.dataTransfer.getData("event"));
+      ev.date = dateStr;
+
+      const idx = events.indexOf(ev);
+      if (idx !== -1) events[idx].date = dateStr;
+
+      const uidx = userEvents.findIndex(x =>
+        x.title === ev.title &&
+        x.location === ev.location &&
+        x.class === ev.class &&
+        x.notes === ev.notes
+      );
+      if (uidx !== -1) {
+        userEvents[uidx].date = dateStr;
+        localStorage.setItem("userEvents", JSON.stringify(userEvents));
+      }
+
+      renderCalendar();
+    });
+
+    /* Add Button */
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "+";
+    addBtn.style.cssText = `
+      float:right;
+      padding:2px 6px;
+      font-size:10px;
+      margin-top:-4px;
+    `;
+    addBtn.onclick = e => {
+      e.stopPropagation();
+      openEventModal(dateStr);
+    };
+    cell.appendChild(addBtn);
+
+    /* Day Number */
+    const dayNumber = document.createElement("div");
+    dayNumber.className = "day-number";
+    dayNumber.textContent = day;
+    cell.appendChild(dayNumber);
+
+    /* Events */
+    const dayEvents = getEventsForDate(dateStr);
+
+    if (dayEvents.length > 0) {
+      dayEvents.forEach(ev => {
+        const evDiv = document.createElement("div");
+        evDiv.style.fontSize = "10px";
+        evDiv.style.marginTop = "2px";
+        evDiv.draggable = true;
+
+        evDiv.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("event", JSON.stringify(ev));
+        });
+
+        evDiv.innerHTML = `
+          <span style="color:${classColors[ev.class]}; font-weight:bold;">
+            ${ev.class}
+          </span>
+          – ${ev.title}
+          <br>
+          <span style="opacity:0.7;">${ev.location}</span>
+        `;
+
+        /* Edit Button */
+        const editBtn = document.createElement("span");
+        editBtn.textContent = " ✎";
+        editBtn.style.cursor = "pointer";
+        editBtn.style.color = classColors[ev.class];
+        editBtn.onclick = e => {
+          e.stopPropagation();
+          openEventModal(dateStr, ev);
+        };
+        evDiv.appendChild(editBtn);
+
+        /* Delete Button */
+        const deleteBtn = document.createElement("span");
+        deleteBtn.textContent = " 🗑️";
+        deleteBtn.style.cursor = "pointer";
+        deleteBtn.style.color = "red";
+        deleteBtn.onclick = e => {
+          e.stopPropagation();
+          userEvents = userEvents.filter(x => x !== ev);
+          localStorage.setItem("userEvents", JSON.stringify(userEvents));
+
+          const idx = events.indexOf(ev);
+          if (idx !== -1) events.splice(idx, 1);
+
+          renderCalendar();
+        };
+        evDiv.appendChild(deleteBtn);
+
+        cell.appendChild(evDiv);
+      });
+
+      cell.addEventListener("click", () => showEvents(dateStr, dayEvents));
+    } else {
+      cell.addEventListener("click", () => showEvents(dateStr, []));
+    }
+
+    calendarGrid.appendChild(cell);
+  }
+}
+
+/* Event Details Panel */
+function showEvents(dateStr, dayEvents) {
+  const dateObj = new Date(dateStr);
+  let html = `<strong>${dateObj.toDateString()}</strong><br>`;
+
+  if (dayEvents.length === 0) {
+    html += "No events for selected classes.";
+  } else {
+    html += "<ul>";
+    dayEvents.forEach(ev => {
+      html += `<li><strong>${ev.title}</strong> (${ev.class}) – ${ev.location}<br>${ev.notes}</li>`;
+    });
+    html += "</ul>";
+  }
+
+  eventList.innerHTML = html;
+}
+
+/* Month Navigation */
+document.getElementById("prevMonth").addEventListener("click", () => {
+  currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  renderCalendar();
+});
+
+document.getElementById("nextMonth").addEventListener("click", () => {
+  currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+  renderCalendar();
+});
+
+/* Print Year View */
+function buildPrintYearView() {
+  const yearGrid = document.getElementById("yearGrid");
+  const printTitle = document.getElementById("printYearTitle");
+
+  printTitle.textContent = currentYear + " Sailing Calendar – Full Year";
+  yearGrid.innerHTML = "";
+
+  for (let m = 0; m < 12; m++) {
+    const block = document.createElement("div");
+    block.className = "monthBlock";
+
+    const title = document.createElement("h2");
+    title.textContent = monthNames[m] + " " + currentYear;
+    block.appendChild(title);
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "monthMiniGrid";
+
+    ["S","M","T","W","T","F","S"].forEach(d => {
+      const hd = document.createElement("div");
+      hd.textContent = d;
+      hd.style.fontWeight = "bold";
+      miniGrid.appendChild(hd);
+    });
+
+    const firstDay = new Date(currentYear, m, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startWeekday; i++) {
+      miniGrid.appendChild(document.createElement("div"));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "miniDay";
+
+      const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayEvents = events.filter(ev => ev.date === dateStr);
+
+      cell.textContent = d + " ";
+
+      dayEvents.forEach(ev => {
+        const dot = document.createElement("span");
+        dot.className = "miniDot";
+        dot.style.backgroundColor = classColors[ev.class];
+        cell.appendChild(dot);
+      });
+
+      miniGrid.appendChild(cell);
+    }
+
+    block.appendChild(miniGrid);
+    yearGrid.appendChild(block);
+  }
+}
+
+document.getElementById("printYearBtn").addEventListener("click", () => {
+  buildPrintYearView();
+  window.print();
+});
+
+/* Event Modal */
 function openEventModal(dateStr, existingEvent = null) {
   const modal = document.getElementById("eventModal");
   modal.style.display = "flex";
@@ -18,7 +567,6 @@ function openEventModal(dateStr, existingEvent = null) {
       notes: document.getElementById("modalNotesInput").value
     };
 
-    // Replace or add
     if (existingEvent) {
       const idx = userEvents.indexOf(existingEvent);
       if (idx !== -1) userEvents[idx] = newEvent;
