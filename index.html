@@ -54,6 +54,13 @@
       padding-top: 10px;
     }
 
+    .eventRow {
+      font-size: 10px;
+      margin-top: 2px;
+      padding: 2px 0;
+      border-bottom: 1px solid #eee;
+    }
+
     @media (max-width: 600px) {
       .calendar {
         grid-template-columns: repeat(2, 1fr);
@@ -188,8 +195,8 @@
       <label>Location:</label>
       <input id="modalLocationInput" type="text" style="width:100%; margin-bottom:10px;">
 
-      <label>Class:</label>
-      <select id="modalClassInput" style="width:100%; margin-bottom:10px;"></select>
+      <label>Classes:</label>
+      <select id="modalClassInput" multiple style="width:100%; margin-bottom:10px; height:120px;"></select>
 
       <label>Notes:</label>
       <textarea id="modalNotesInput" style="width:100%; height:60px; margin-bottom:10px;"></textarea>
@@ -262,7 +269,7 @@
           date,
           title: "Kingfisher CatFest",
           location,
-          class: cls.name,
+          classes: [cls.name],
           notes: "All classes"
         }))
       );
@@ -270,8 +277,8 @@
 
     /* Default Events */
     const events = [
-      { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", class: "F18", notes: "2-day event" },
-      { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", class: "Hurricane", notes: "SX + Classic fleets" },
+      { date: "2027-03-12", title: "Spring Regatta", location: "Grafham Water", classes: ["F18"], notes: "2-day event" },
+      { date: "2027-04-09", title: "Hurricane Open", location: "Rutland Water", classes: ["Hurricane"], notes: "SX + Classic fleets" },
 
       ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
       ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
@@ -308,8 +315,8 @@
     /* Event Lookup */
     function getEventsForDate(dateStr) {
       return [
-        ...events.filter(ev => ev.date === dateStr && activeClasses[ev.class]),
-        ...userEvents.filter(ev => ev.date === dateStr && activeClasses[ev.class])
+        ...events.filter(ev => ev.date === dateStr && ev.classes.some(c => activeClasses[c])),
+        ...userEvents.filter(ev => ev.date === dateStr && ev.classes.some(c => activeClasses[c]))
       ];
     }
 
@@ -353,24 +360,17 @@
           const ev = JSON.parse(e.dataTransfer.getData("event"));
           ev.date = dateStr;
 
-          const idx = events.findIndex(x =>
+          const match = x =>
             x.title === ev.title &&
             x.location === ev.location &&
-            x.class === ev.class &&
+            JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
             x.notes === ev.notes &&
-            x.date === ev.date
-          );
-          if (idx !== -1) {
-            events[idx].date = dateStr;
-          }
+            x.date === ev.date;
 
-          const uidx = userEvents.findIndex(x =>
-            x.title === ev.title &&
-            x.location === ev.location &&
-            x.class === ev.class &&
-            x.notes === ev.notes &&
-            x.date === ev.date
-          );
+          const idx = events.findIndex(match);
+          if (idx !== -1) events[idx].date = dateStr;
+
+          const uidx = userEvents.findIndex(match);
           if (uidx !== -1) {
             userEvents[uidx].date = dateStr;
             localStorage.setItem("userEvents", JSON.stringify(userEvents));
@@ -405,71 +405,66 @@
 
         if (dayEvents.length > 0) {
           dayEvents.forEach(ev => {
-            const evDiv = document.createElement("div");
-            evDiv.style.fontSize = "10px";
-            evDiv.style.marginTop = "2px";
-            evDiv.draggable = true;
 
-            evDiv.addEventListener("dragstart", e => {
-              e.dataTransfer.setData("event", JSON.stringify(ev));
+            ev.classes.forEach(cls => {
+              const row = document.createElement("div");
+              row.className = "eventRow";
+              row.draggable = true;
+
+              row.addEventListener("dragstart", e => {
+                e.dataTransfer.setData("event", JSON.stringify(ev));
+              });
+
+              row.innerHTML = `
+                <span style="color:${classColors[cls]}; font-weight:bold;">
+                  ${cls}
+                </span>
+                – ${ev.title}
+                <br>
+                <span style="opacity:0.7;">${ev.location}</span>
+              `;
+
+              /* Edit Button */
+              const editBtn = document.createElement("span");
+              editBtn.textContent = " ✎";
+              editBtn.style.cursor = "pointer";
+              editBtn.style.color = classColors[cls];
+              editBtn.onclick = e => {
+                e.stopPropagation();
+                openEventModal(dateStr, ev);
+              };
+              row.appendChild(editBtn);
+
+              /* Delete Button */
+              const deleteBtn = document.createElement("span");
+              deleteBtn.textContent = " 🗑️";
+              deleteBtn.style.cursor = "pointer";
+              deleteBtn.style.color = "red";
+              deleteBtn.onclick = e => {
+                e.stopPropagation();
+
+                const match = x =>
+                  x.title === ev.title &&
+                  x.location === ev.location &&
+                  JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
+                  x.notes === ev.notes &&
+                  x.date === ev.date;
+
+                const uidx = userEvents.findIndex(match);
+                if (uidx !== -1) {
+                  userEvents.splice(uidx, 1);
+                  localStorage.setItem("userEvents", JSON.stringify(userEvents));
+                }
+
+                const idx = events.findIndex(match);
+                if (idx !== -1) events.splice(idx, 1);
+
+                renderCalendar();
+              };
+              row.appendChild(deleteBtn);
+
+              cell.appendChild(row);
             });
-
-            evDiv.innerHTML = `
-              <span style="color:${classColors[ev.class]}; font-weight:bold;">
-                ${ev.class}
-              </span>
-              – ${ev.title}
-              <br>
-              <span style="opacity:0.7;">${ev.location}</span>
-            `;
-
-            /* Edit Button */
-            const editBtn = document.createElement("span");
-            editBtn.textContent = " ✎";
-            editBtn.style.cursor = "pointer";
-            editBtn.style.color = classColors[ev.class];
-            editBtn.onclick = e => {
-              e.stopPropagation();
-              openEventModal(dateStr, ev);
-            };
-            evDiv.appendChild(editBtn);
-
-            /* Delete Button */
-            const deleteBtn = document.createElement("span");
-            deleteBtn.textContent = " 🗑️";
-            deleteBtn.style.cursor = "pointer";
-            deleteBtn.style.color = "red";
-            deleteBtn.onclick = e => {
-              e.stopPropagation();
-
-              const uidx = userEvents.findIndex(x =>
-                x.title === ev.title &&
-                x.location === ev.location &&
-                x.class === ev.class &&
-                x.notes === ev.notes &&
-                x.date === ev.date
-              );
-              if (uidx !== -1) {
-                userEvents.splice(uidx, 1);
-                localStorage.setItem("userEvents", JSON.stringify(userEvents));
-              }
-
-              const idx = events.findIndex(x =>
-                x.title === ev.title &&
-                x.location === ev.location &&
-                x.class === ev.class &&
-                x.notes === ev.notes &&
-                x.date === ev.date
-              );
-              if (idx !== -1) {
-                events.splice(idx, 1);
-              }
-
-              renderCalendar();
-            };
-            evDiv.appendChild(deleteBtn);
-
-            cell.appendChild(evDiv);
           });
 
           cell.addEventListener("click", () => showEvents(dateStr, dayEvents));
@@ -491,7 +486,7 @@
       } else {
         html += "<ul>";
         dayEvents.forEach(ev => {
-          html += `<li><strong>${ev.title}</strong> (${ev.class}) – ${ev.location}<br>${ev.notes}</li>`;
+          html += `<li><strong>${ev.title}</strong> – ${ev.location}<br>Classes: ${ev.classes.join(", ")}<br>${ev.notes}</li>`;
         });
         html += "</ul>";
       }
@@ -548,15 +543,20 @@
           cell.className = "miniDay";
 
           const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-          const dayEvents = events.filter(ev => ev.date === dateStr);
+          const dayEvents = [
+            ...events.filter(ev => ev.date === dateStr),
+            ...userEvents.filter(ev => ev.date === dateStr)
+          ];
 
           cell.textContent = d + " ";
 
           dayEvents.forEach(ev => {
-            const dot = document.createElement("span");
-            dot.className = "miniDot";
-            dot.style.backgroundColor = classColors[ev.class];
-            cell.appendChild(dot);
+            ev.classes.forEach(cls => {
+              const dot = document.createElement("span");
+              dot.className = "miniDot";
+              dot.style.backgroundColor = classColors[cls];
+              cell.appendChild(dot);
+            });
           });
 
           miniGrid.appendChild(cell);
@@ -582,35 +582,43 @@
       document.getElementById("modalLocationInput").value = existingEvent?.location || "";
       document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
 
-      /* Populate class dropdown */
+      /* Populate multi-select class list */
       const classSelect = document.getElementById("modalClassInput");
       classSelect.innerHTML = "";
+
       classes.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c.name;
         opt.textContent = c.name;
+
+        if (existingEvent?.classes?.includes(c.name)) {
+          opt.selected = true;
+        }
+
         classSelect.appendChild(opt);
       });
-      classSelect.value = existingEvent?.class || classes[0].name;
 
       /* Save event */
       document.getElementById("modalSaveBtn").onclick = () => {
+        const selectedClasses = Array.from(classSelect.selectedOptions).map(opt => opt.value);
+
         const newEvent = {
           date: document.getElementById("modalDate").value,
           title: document.getElementById("modalTitleInput").value,
           location: document.getElementById("modalLocationInput").value,
-          class: document.getElementById("modalClassInput").value,
+          classes: selectedClasses,
           notes: document.getElementById("modalNotesInput").value
         };
 
+        const match = x =>
+          x.title === existingEvent?.title &&
+          x.location === existingEvent?.location &&
+          JSON.stringify(x.classes) === JSON.stringify(existingEvent?.classes) &&
+          x.notes === existingEvent?.notes &&
+          x.date === existingEvent?.date;
+
         if (existingEvent) {
-          const idx = userEvents.findIndex(x =>
-            x.title === existingEvent.title &&
-            x.location === existingEvent.location &&
-            x.class === existingEvent.class &&
-            x.notes === existingEvent.notes &&
-            x.date === existingEvent.date
-          );
+          const idx = userEvents.findIndex(match);
           if (idx !== -1) {
             userEvents[idx] = newEvent;
           }
