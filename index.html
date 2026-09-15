@@ -1,267 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>2027 Sailing Calendar</title>
+<meta charset="UTF-8">
+<title>2027 Sailing Calendar</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      margin-right: 0;
-    }
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    margin-right: 0;
+  }
 
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-      align-items: center;
-    }
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    align-items: center;
+  }
 
-    .month-nav button {
-      padding: 6px 12px;
-    }
+  .month-nav button {
+    padding: 6px 12px;
+  }
 
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .day-header {
+    font-weight: bold;
+    text-align: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .day {
+    border: 1px solid #ccc;
+    min-height: 70px;
+    padding: 4px;
+    cursor: pointer;
+    background: #fafafa;
+  }
+
+  .day-number {
+    font-weight: bold;
+  }
+
+  #eventDetails {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+
+  .eventRow {
+    font-size: 10px;
+    margin-top: 2px;
+    padding: 2px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  /* Larger class filter icons */
+  #classFilters img {
+    width: 44px;
+    height: 44px;
+    margin: 0 6px;
+  }
+
+  /* Larger icons inside calendar day cells */
+  .eventRow img {
+    width: 28px;
+    height: 28px;
+    display: block;
+    margin: 2px auto;
+  }
+
+  /* Class label under icon */
+  .classLabel {
+    font-size: 10px;
+    text-align: center;
+    margin-top: 2px;
+    font-weight: bold;
+  }
+
+  /* Icons in event details */
+  .eventIconSmall {
+    width: 22px;
+    height: 22px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @media (max-width: 600px) {
     .calendar {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .day-header {
+      display: none;
+    }
+    .controls {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    #classFilters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .day {
+      min-height: 60px;
+    }
+  }
+
+  @media print {
+    body {
+      margin: 0;
+      padding: 20px;
+      font-size: 12px;
+    }
+
+    .controls,
+    #calendarGrid,
+    #eventDetails {
+      display: none !important;
+    }
+
+    #printYearView {
+      display: block !important;
+    }
+
+    #yearGrid {
+      page-break-inside: avoid;
+    }
+
+    .monthBlock {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .monthBlock h2 {
+      margin-top: 0;
+      font-size: 16px;
+    }
+
+    .monthMiniGrid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-    }
-
-    .day-header {
-      font-weight: bold;
-      text-align: center;
-      padding: 4px 0;
-      border-bottom: 1px solid #ccc;
-    }
-
-    .day {
-      border: 1px solid #ccc;
-      min-height: 70px;
-      padding: 4px;
-      cursor: pointer;
-      background: #fafafa;
-    }
-
-    .day-number {
-      font-weight: bold;
-    }
-
-    #eventDetails {
-      margin-top: 20px;
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
-    }
-
-    .eventRow {
+      gap: 2px;
       font-size: 10px;
-      margin-top: 2px;
-      padding: 2px 0;
-      border-bottom: 1px solid #eee;
     }
 
-    @media (max-width: 600px) {
-      .calendar {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .day-header {
-        display: none;
-      }
-      .controls {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      #classFilters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .day {
-        min-height: 60px;
-      }
+    .miniDay {
+      border: 1px solid #ddd;
+      min-height: 20px;
+      padding: 2px;
     }
 
-    @media print {
-      body {
-        margin: 0;
-        padding: 20px;
-        font-size: 12px;
-      }
-
-      .controls,
-      #calendarGrid,
-      #eventDetails {
-        display: none !important;
-      }
-
-      #printYearView {
-        display: block !important;
-      }
-
-      #yearGrid {
-        page-break-inside: avoid;
-      }
-
-      .monthBlock {
-        border: 1px solid #ccc;
-        padding: 10px;
-      }
-
-      .monthBlock h2 {
-        margin-top: 0;
-        font-size: 16px;
-      }
-
-      .monthMiniGrid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-        font-size: 10px;
-      }
-
-      .miniDay {
-        border: 1px solid #ddd;
-        min-height: 20px;
-        padding: 2px;
-      }
-
-      .miniDot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        display: inline-block;
-      }
+    .miniDay img {
+      width: 10px;
+      height: 10px;
+      margin-left: 2px;
     }
-  </style>
+  }
+</style>
 </head>
 
 <body>
-<div style="
-  margin-bottom:15px;
-  padding:10px;
-  background:#f0f4ff;
-  border:1px solid #bcd0ff;
-  border-radius:6px;
-">
-  <label for="eventSearchInput" style="
-    display:block;
-    font-weight:bold;
-    font-size:15px;
-    margin-bottom:6px;
-    color:#003a8c;
-  ">
+
+<!-- Search -->
+<div style="margin-bottom:15px; padding:10px; background:#f0f4ff; border:1px solid #bcd0ff; border-radius:6px;">
+  <label for="eventSearchInput" style="display:block; font-weight:bold; font-size:15px; margin-bottom:6px; color:#003a8c;">
     🔍 Search Events
   </label>
 
-  <input 
-    id="eventSearchInput" 
-    type="text" 
-    placeholder="Type a class, title, location, or keyword…" 
-    style="
-      width:100%;
-      padding:10px;
-      font-size:15px;
-      border:1px solid #99b3ff;
-      border-radius:4px;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-    "
-  >
-</div>
-<div style="
-  margin-bottom:15px;
-  padding:10px;
-  background:#f0f4ff;
-  border:1px solid #bcd0ff;
-  border-radius:6px;
-">
-  <label for="eventSearchInput" style="
-    display:block;
-    font-weight:bold;
-    font-size:15px;
-    margin-bottom:6px;
-    color:#003a8c;
-  ">
-    
+  <input id="eventSearchInput" type="text" placeholder="Type a class, title, location, or keyword…" 
+    style="width:100%; padding:10px; font-size:15px; border:1px solid #99b3ff; border-radius:4px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
 </div>
 
-  <!-- Controls -->
-  <div class="controls">
-    <div class="month-nav">
-      <button id="prevMonth">◀</button>
-      <span id="monthLabel" style="margin:0 10px; font-weight:bold;"></span>
-      <button id="nextMonth">▶</button>
-    </div>
-    <div id="classFilters"></div>
-    <button id="printYearBtn">Print Full Year</button>
-    <button id="exportPdfBtn" style="margin-top:8px;">
-  Export Year to PDF
-</button>
+<!-- Controls -->
+<div class="controls">
+  <div class="month-nav">
+    <button id="prevMonth">◀</button>
+    <span id="monthLabel" style="margin:0 10px; font-weight:bold;"></span>
+    <button id="nextMonth">▶</button>
+  </div>
+
+  <div id="classFilters"></div>
+
+  <button id="printYearBtn">Print Full Year</button>
+  <button id="exportPdfBtn" style="margin-top:8px;">Export Year to PDF</button>
 </div>
 
-  <!-- Calendar Grid -->
-  <div id="calendarGrid" class="calendar"></div>
+<!-- Calendar Grid -->
+<div id="calendarGrid" class="calendar"></div>
 
-  <!-- Event Details -->
-  <div id="eventDetails">
-    <h3>Selected Day</h3>
-    <div id="eventList"></div>
+<!-- Event Details -->
+<div id="eventDetails">
+  <h3>Selected Day</h3>
+  <div id="eventList"></div>
+</div>
+
+<!-- Print Year View -->
+<div id="printYearView" style="display:none;">
+  <h2 id="printYearTitle"></h2>
+  <div id="yearGrid"></div>
+</div>
+
+<!-- Event Modal -->
+<div id="eventModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 9999;">
+  <div style="background: #fff; padding: 20px; width: 320px; border-radius: 6px; box-shadow: 0 0 10px rgba(0,0,0,0.3);">
+    <h3>Edit / Add Event</h3>
+
+    <label>Date:</label>
+    <input id="modalDate" type="date" style="width:100%; margin-bottom:10px;">
+
+    <label>Title:</label>
+    <input id="modalTitleInput" type="text" style="width:100%; margin-bottom:10px;">
+
+    <label>Location:</label>
+    <input id="modalLocationInput" type="text" style="width:100%; margin-bottom:10px;">
+
+    <label>Classes:</label>
+    <select id="modalClassInput" multiple style="width:100%; margin-bottom:10px; height:120px;"></select>
+
+    <label>Notes:</label>
+    <textarea id="modalNotesInput" style="width:100%; height:60px; margin-bottom:10px;"></textarea>
+
+    <button id="modalSaveBtn" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:4px;">Save</button>
+    <button id="modalCancelBtn" style="padding:6px 12px; background:#dc3545; color:#fff; border:none; border-radius:4px; margin-left:10px;">Cancel</button>
   </div>
+</div>
 
-  <!-- Print Year View -->
-  <div id="printYearView" style="display:none;">
-    <h2 id="printYearTitle"></h2>
-    <div id="yearGrid"></div>
-  </div>
-
-  <!-- Event Modal -->
-  <div id="eventModal" style="
-    display:none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  ">
-    <div style="
-      background: #fff;
-      padding: 20px;
-      width: 320px;
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    ">
-      <h3>Edit / Add Event</h3>
-
-      <label>Date:</label>
-      <input id="modalDate" type="date" style="width:100%; margin-bottom:10px;">
-
-      <label>Title:</label>
-      <input id="modalTitleInput" type="text" style="width:100%; margin-bottom:10px;">
-
-      <label>Location:</label>
-      <input id="modalLocationInput" type="text" style="width:100%; margin-bottom:10px;">
-
-      <label>Classes:</label>
-      <select id="modalClassInput" multiple style="width:100%; margin-bottom:10px; height:120px;"></select>
-
-      <label>Notes:</label>
-      <textarea id="modalNotesInput" style="width:100%; height:60px; margin-bottom:10px;"></textarea>
-
-      <button id="modalSaveBtn" style="padding:6px 12px; background:#28a745; color:#fff; border:none; border-radius:4px;">
-        Save
-      </button>
-
-      <button id="modalCancelBtn" style="padding:6px 12px; background:#dc3545; color:#fff; border:none; border-radius:4px; margin-left:10px;">
-        Cancel
-      </button>
-    </div>
-  </div>
-
-  <script>
+<script>
 /* Calendar State */
 let currentYear = 2027;
 let currentMonth = 0;
@@ -351,50 +322,41 @@ classes.forEach(c => activeClasses[c.name] = true);
 
 function initClassFilters() {
   const container = document.getElementById("classFilters");
+  container.innerHTML = "";
 
   classes.forEach(cls => {
+    const wrapper = document.createElement("label");
+    wrapper.style.marginRight = "14px";
+    wrapper.style.display = "inline-flex";
+    wrapper.style.alignItems = "center";
+    wrapper.style.fontSize = "14px";
+    wrapper.style.fontWeight = "bold";
+
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = true;
+    checkbox.style.marginRight = "6px";
 
     checkbox.addEventListener("change", () => {
       activeClasses[cls.name] = checkbox.checked;
       renderCalendar();
     });
 
-    const label = document.createElement("label");
-    label.style.marginRight = "10px";
-    label.appendChild(checkbox);
-
     const img = document.createElement("img");
     img.src = classInsignia[cls.name];
-    img.style.width = "26px";
-    img.style.height = "26px";
+    img.style.width = "44px";
+    img.style.height = "44px";
     img.style.marginLeft = "6px";
-    img.style.verticalAlign = "middle";
+    img.style.marginRight = "6px";
 
-    label.appendChild(img);
-    container.appendChild(label);
+    const text = document.createElement("span");
+    text.textContent = cls.name;
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(img);
+    wrapper.appendChild(text);
+    container.appendChild(wrapper);
   });
-
-  const selectAllBtn = document.getElementById("selectAllBtn");
-  const selectNoneBtn = document.getElementById("selectNoneBtn");
-
-  if (selectAllBtn) {
-    selectAllBtn.onclick = () => {
-      classes.forEach(c => activeClasses[c.name] = true);
-      document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = true);
-      renderCalendar();
-    };
-  }
-
-  if (selectNoneBtn) {
-    selectNoneBtn.onclick = () => {
-      classes.forEach(c => activeClasses[c.name] = false);
-      document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = false);
-      renderCalendar();
-    };
-  }
 }
 
 /* User Events */
@@ -404,10 +366,7 @@ let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
 let searchQuery = "";
 
 function getEventsForDate(dateStr) {
-  const all = [
-    ...events,
-    ...userEvents
-  ];
+  const all = [...events, ...userEvents];
 
   return all.filter(ev =>
     ev.date === dateStr &&
@@ -516,12 +475,21 @@ function renderCalendar() {
             e.dataTransfer.setData("event", JSON.stringify(ev));
           });
 
-          row.innerHTML = `
-            <img src="${classInsignia[cls]}" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;">
-            <strong>${ev.title}</strong>
-            <br>
-            <span style="opacity:0.7;">${ev.location}</span>
-          `;
+          /* BIGGER ICON */
+          const icon = document.createElement("img");
+          icon.src = classInsignia[cls];
+          icon.style.width = "28px";
+          icon.style.height = "28px";
+          icon.style.display = "block";
+          icon.style.margin = "2px auto";
+
+          /* CLASS LABEL */
+          const label = document.createElement("div");
+          label.className = "classLabel";
+          label.textContent = cls;
+
+          row.appendChild(icon);
+          row.appendChild(label);
 
           /* Edit Button */
           const editBtn = document.createElement("span");
@@ -559,7 +527,7 @@ function renderCalendar() {
             if (idx !== -1) events.splice(idx, 1);
 
             renderCalendar();
-          };
+                   };
           row.appendChild(deleteBtn);
 
           cell.appendChild(row);
@@ -587,14 +555,14 @@ function showEvents(dateStr, dayEvents) {
     dayEvents.forEach(ev => {
       const icons = ev.classes
         .filter(c => activeClasses[c])
-        .map(c => `<img src="${classInsignia[c]}" style="width:18px; height:18px; margin-right:4px;">`)
+        .map(c => `<img src="${classInsignia[c]}" class="eventIconSmall">`)
         .join("");
 
       html += `
-        <li>
+        <li class="eventRow">
           ${icons}
-          <strong>${ev.title}</strong> – ${ev.location}
-          <br>${ev.notes}
+          <strong>${ev.classes.join(", ")}</strong> – ${ev.title} (${ev.location})
+          <br>${ev.notes || ""}
         </li>
       `;
     });
@@ -758,27 +726,21 @@ function buildPrintYearViewFiltered() {
 }
 
 /* Print Buttons */
-const printYearBtn = document.getElementById("printYearBtn");
-if (printYearBtn) {
-  printYearBtn.addEventListener("click", () => {
-    buildPrintYearView();
-    window.print();
-  });
-}
+document.getElementById("printYearBtn").addEventListener("click", () => {
+  buildPrintYearView();
+  window.print();
+});
 
-const exportPdfBtn = document.getElementById("exportPdfBtn");
-if (exportPdfBtn) {
-  exportPdfBtn.addEventListener("click", () => {
-    buildPrintYearViewFiltered();
+document.getElementById("exportPdfBtn").addEventListener("click", () => {
+  buildPrintYearViewFiltered();
 
-    const printView = document.getElementById("printYearView");
-    printView.style.display = "block";
+  const printView = document.getElementById("printYearView");
+  printView.style.display = "block";
 
-    window.print();
+  window.print();
 
-    printView.style.display = "none";
-  });
-}
+  printView.style.display = "none";
+});
 
 /* Event Modal */
 function openEventModal(dateStr, existingEvent = null) {
@@ -796,10 +758,7 @@ function openEventModal(dateStr, existingEvent = null) {
   classes.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.name;
-    opt.innerHTML = `
-      <img src="${classInsignia[c.name]}" style="width:18px; height:18px; vertical-align:middle; margin-right:6px;">
-      ${c.name}
-    `;
+    opt.textContent = c.name;
 
     if (existingEvent?.classes?.includes(c.name)) {
       opt.selected = true;
