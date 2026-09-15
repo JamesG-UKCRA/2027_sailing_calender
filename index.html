@@ -61,35 +61,13 @@
     border-bottom: 1px solid #eee;
   }
 
-  /* Larger class filter icons */
-  #classFilters img {
-    width: 44px;
-    height: 44px;
-    margin: 0 6px;
-  }
-
-  /* Larger icons inside calendar day cells */
-  .eventRow img {
-    width: 28px;
-    height: 28px;
-    display: block;
-    margin: 2px auto;
-  }
-
-  /* Class label under icon */
+  /* TEXT-ONLY CLASS LABEL */
   .classLabel {
     font-size: 10px;
+    font-weight: bold;
+    display: block;
     text-align: center;
     margin-top: 2px;
-    font-weight: bold;
-  }
-
-  /* Icons in event details */
-  .eventIconSmall {
-    width: 22px;
-    height: 22px;
-    vertical-align: middle;
-    margin-right: 6px;
   }
 
   @media (max-width: 600px) {
@@ -157,10 +135,10 @@
       padding: 2px;
     }
 
-    .miniDay img {
-      width: 10px;
-      height: 10px;
+    .miniDay span {
+      font-size: 7px;
       margin-left: 2px;
+      display: inline-block;
     }
   }
 </style>
@@ -269,19 +247,6 @@ const classColors = {
   "Unicorn": "#F012BE"
 };
 
-const classInsignia = {
-  "A-Class": "img/insignia_aclass.svg",
-  "Dart 15": "img/insignia_dart15.svg",
-  "Dart 18": "img/insignia_dart18.svg",
-  "F18": "img/insignia_f18.svg",
-  "F20": "img/insignia_f20.svg",
-  "Hurricane": "img/insignia_hurricane.svg",
-  "Nacra 15": "img/insignia_nacra15.svg",
-  "Shearwater": "img/insignia_shearwater.svg",
-  "Tornado": "img/insignia_tornado.svg",
-  "Unicorn": "img/insignia_unicorn.svg"
-};
-
 /* Multi-Day Expansion */
 function expandMultiDay(start, end) {
   const dates = [];
@@ -342,18 +307,10 @@ function initClassFilters() {
       renderCalendar();
     });
 
-    const img = document.createElement("img");
-    img.src = classInsignia[cls.name];
-    img.style.width = "44px";
-    img.style.height = "44px";
-    img.style.marginLeft = "6px";
-    img.style.marginRight = "6px";
-
     const text = document.createElement("span");
     text.textContent = cls.name;
 
     wrapper.appendChild(checkbox);
-    wrapper.appendChild(img);
     wrapper.appendChild(text);
     container.appendChild(wrapper);
   });
@@ -475,20 +432,11 @@ function renderCalendar() {
             e.dataTransfer.setData("event", JSON.stringify(ev));
           });
 
-          /* BIGGER ICON */
-          const icon = document.createElement("img");
-          icon.src = classInsignia[cls];
-          icon.style.width = "28px";
-          icon.style.height = "28px";
-          icon.style.display = "block";
-          icon.style.margin = "2px auto";
-
-          /* CLASS LABEL */
+          /* TEXT-ONLY CLASS LABEL */
           const label = document.createElement("div");
           label.className = "classLabel";
           label.textContent = cls;
 
-          row.appendChild(icon);
           row.appendChild(label);
 
           /* Edit Button */
@@ -527,7 +475,7 @@ function renderCalendar() {
             if (idx !== -1) events.splice(idx, 1);
 
             renderCalendar();
-                   };
+          };
           row.appendChild(deleteBtn);
 
           cell.appendChild(row);
@@ -553,15 +501,15 @@ function showEvents(dateStr, dayEvents) {
   } else {
     html += "<ul>";
     dayEvents.forEach(ev => {
-      const icons = ev.classes
+      const labels = ev.classes
         .filter(c => activeClasses[c])
-        .map(c => `<img src="${classInsignia[c]}" class="eventIconSmall">`)
+        .map(c => `<span class="classLabel">${c}</span>`)
         .join("");
 
       html += `
         <li class="eventRow">
-          ${icons}
-          <strong>${ev.classes.join(", ")}</strong> – ${ev.title} (${ev.location})
+          ${labels}
+          <strong>${ev.title}</strong> – ${ev.location}
           <br>${ev.notes || ""}
         </li>
       `;
@@ -640,12 +588,11 @@ function buildPrintYearView() {
 
       dayEvents.forEach(ev => {
         ev.classes.forEach(cls => {
-          const icon = document.createElement("img");
-          icon.src = classInsignia[cls];
-          icon.style.width = "10px";
-          icon.style.height = "10px";
-          icon.style.marginLeft = "2px";
-          cell.appendChild(icon);
+          const txt = document.createElement("span");
+          txt.textContent = cls;
+          txt.style.fontSize = "7px";
+          txt.style.marginLeft = "2px";
+          cell.appendChild(txt);
         });
       });
 
@@ -708,12 +655,11 @@ function buildPrintYearViewFiltered() {
         ev.classes
           .filter(cls => activeClasses[cls])
           .forEach(cls => {
-            const icon = document.createElement("img");
-            icon.src = classInsignia[cls];
-            icon.style.width = "10px";
-            icon.style.height = "10px";
-            icon.style.marginLeft = "2px";
-            cell.appendChild(icon);
+            const txt = document.createElement("span");
+            txt.textContent = cls;
+            txt.style.fontSize = "7px";
+            txt.style.marginLeft = "2px";
+            cell.appendChild(txt);
           });
       });
 
@@ -807,7 +753,3 @@ function openEventModal(dateStr, existingEvent = null) {
 /* Init */
 initClassFilters();
 renderCalendar();
-
-</script>
-</body>
-</html>
