@@ -209,7 +209,10 @@
     </div>
     <div id="classFilters"></div>
     <button id="printYearBtn">Print Full Year</button>
-  </div>
+    <button id="exportPdfBtn" style="margin-top:8px;">
+  Export Year to PDF
+</button>
+</div>
 
   <!-- Calendar Grid -->
   <div id="calendarGrid" class="calendar"></div>
@@ -309,6 +312,19 @@
       "Tornado": "#001f3f",
       "Unicorn": "#F012BE"
     };
+const classInsignia = {
+  "A-Class": "img/insignia_aclass.svg",
+  "Dart 15": "img/insignia_dart15.svg",
+  "Dart 18": "img/insignia_dart18.svg",
+  "F18": "img/insignia_f18.svg",
+  "F20": "img/insignia_f20.svg",
+  "Hurricane": "img/insignia_hurricane.svg",
+  "Nacra 15": "img/insignia_nacra15.svg",
+  "Shearwater": "img/insignia_shearwater.svg",
+  "Tornado": "img/insignia_tornado.svg",
+  "Unicorn": "img/insignia_unicorn.svg"
+};
+
 
     /* Multi-Day Expansion */
     function expandMultiDay(start, end) {
@@ -346,11 +362,26 @@
     ];
 
     /* Class Filters */
-    const activeClasses = {};
+     <div id="classToggle" style="margin-top:6px;">
+  <button id="selectAllBtn">Select All</button>
+  <button id="selectNoneBtn">Select None</button>
+</div>const activeClasses = {};
     classes.forEach(c => activeClasses[c.name] = true);
 
     function initClassFilters() {
-      const container = document.getElementById("classFilters");
+   document.getElementById("selectAllBtn").onclick = () => {
+  classes.forEach(c => activeClasses[c.name] = true);
+  document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = true);
+  renderCalendar();
+};
+
+document.getElementById("selectNoneBtn").onclick = () => {
+  classes.forEach(c => activeClasses[c.name] = false);
+  document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = false);
+  renderCalendar();
+};
+  
+const container = document.getElementById("classFilters");
       classes.forEach(cls => {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
@@ -364,7 +395,14 @@
         const label = document.createElement("label");
         label.style.marginRight = "10px";
         label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(" " + cls.name));
+        const img = document.createElement("img");
+img.src = classInsignia[cls.name];
+img.style.width = "26px";
+img.style.height = "26px";
+img.style.marginLeft = "6px";
+img.style.verticalAlign = "middle";
+
+label.appendChild(img);
 
         container.appendChild(label);
       });
@@ -488,14 +526,13 @@ function getEventsForDate(dateStr) {
                 e.dataTransfer.setData("event", JSON.stringify(ev));
               });
 
-              row.innerHTML = `
-                <span style="color:${classColors[cls]}; font-weight:bold;">
-                  ${cls}
-                </span>
-                – ${ev.title}
-                <br>
-                <span style="opacity:0.7;">${ev.location}</span>
-              `;
+             row.innerHTML = `
+  <img src="${classInsignia[cls]}" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;">
+  <strong>${ev.title}</strong>
+  <br>
+  <span style="opacity:0.7;">${ev.location}</span>
+`;
+ 
 
               /* Edit Button */
               const editBtn = document.createElement("span");
@@ -559,7 +596,19 @@ function getEventsForDate(dateStr) {
       } else {
         html += "<ul>";
         dayEvents.forEach(ev => {
-          html += `<li><strong>${ev.title}</strong> – ${ev.location}<br>Classes: ${ev.classes.join(", ")}<br>${ev.notes}</li>`;
+        const icons = ev.classes
+  .filter(c => activeClasses[c])
+  .map(c => `<img src="${classInsignia[c]}" style="width:18px; height:18px; margin-right:4px;">`)
+  .join("");
+
+html += `
+  <li>
+    ${icons}
+    <strong>${ev.title}</strong> – ${ev.location}
+    <br>${ev.notes}
+  </li>
+`;
+ classes.join(", ")}<br>${ev.notes}</li>`;
         });
         html += "</ul>";
       }
@@ -583,7 +632,73 @@ function getEventsForDate(dateStr) {
 });
  
     /* Print Year View */
-    function buildPrintYearView() {
+   function buildPrintYearViewFiltered() {
+  const yearGrid = document.getElementById("yearGrid");
+  const printTitle = document.getElementById("printYearTitle");
+
+  printTitle.textContent = currentYear + " Sailing Calendar – Selected Classes";
+  yearGrid.innerHTML = "";
+
+  for (let m = 0; m < 12; m++) {
+    const block = document.createElement("div");
+    block.className = "monthBlock";
+
+    const title = document.createElement("h2");
+    title.textContent = monthNames[m] + " " + currentYear;
+    block.appendChild(title);
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "monthMiniGrid";
+
+    ["S","M","T","W","T","F","S"].forEach(d => {
+      const hd = document.createElement("div");
+      hd.textContent = d;
+      hd.style.fontWeight = "bold";
+      miniGrid.appendChild(hd);
+    });
+
+    const firstDay = new Date(currentYear, m, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startWeekday; i++) {
+      miniGrid.appendChild(document.createElement("div"));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "miniDay";
+
+      const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+      const dayEvents = [
+        ...events.filter(ev => ev.date === dateStr),
+        ...userEvents.filter(ev => ev.date === dateStr)
+      ].filter(ev => ev.classes.some(c => activeClasses[c]));
+
+      cell.textContent = d + " ";
+
+      dayEvents.forEach(ev => {
+        ev.classes
+          .filter(cls => activeClasses[cls])
+          .forEach(cls => {
+          const icon = document.createElement("img");
+icon.src = classInsignia[cls];
+icon.style.width = "10px";
+icon.style.height = "10px";
+icon.style.marginLeft = "2px";
+cell.appendChild(icon);  
+          });
+      });
+
+      miniGrid.appendChild(cell);
+    }
+
+    block.appendChild(miniGrid);
+    yearGrid.appendChild(block);
+  }
+}
+ function buildPrintYearView() {
       const yearGrid = document.getElementById("yearGrid");
       const printTitle = document.getElementById("printYearTitle");
 
@@ -644,11 +759,86 @@ function getEventsForDate(dateStr) {
         yearGrid.appendChild(block);
       }
     }
+function buildPrintYearViewFiltered() {
+  const yearGrid = document.getElementById("yearGrid");
+  const printTitle = document.getElementById("printYearTitle");
 
-    document.getElementById("printYearBtn").addEventListener("click", () => {
-      buildPrintYearView();
-      window.print();
+  printTitle.textContent = currentYear + " Sailing Calendar – Selected Classes";
+  yearGrid.innerHTML = "";
+
+  for (let m = 0; m < 12; m++) {
+    const block = document.createElement("div");
+    block.className = "monthBlock";
+
+    const title = document.createElement("h2");
+    title.textContent = monthNames[m] + " " + currentYear;
+    block.appendChild(title);
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "monthMiniGrid";
+
+    ["S","M","T","W","T","F","S"].forEach(d => {
+      const hd = document.createElement("div");
+      hd.textContent = d;
+      hd.style.fontWeight = "bold";
+      miniGrid.appendChild(hd);
     });
+
+    const firstDay = new Date(currentYear, m, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startWeekday; i++) {
+      miniGrid.appendChild(document.createElement("div"));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "miniDay";
+
+      const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+      const dayEvents = [
+        ...events.filter(ev => ev.date === dateStr),
+        ...userEvents.filter(ev => ev.date === dateStr)
+      ].filter(ev => ev.classes.some(c => activeClasses[c]));
+
+      cell.textContent = d + " ";
+
+      dayEvents.forEach(ev => {
+        ev.classes
+          .filter(cls => activeClasses[cls])
+          .forEach(cls => {
+            const icon = document.createElement("img");
+            icon.src = classInsignia[cls];
+            icon.style.width = "10px";
+            icon.style.height = "10px";
+            icon.style.marginLeft = "2px";
+            cell.appendChild(icon);
+          });
+      });
+
+      miniGrid.appendChild(cell);
+    }
+
+    block.appendChild(miniGrid);
+    yearGrid.appendChild(block);
+  }
+}
+
+  // Build the full-year layout
+  buildPrintYearView();
+
+  // Force print mode
+  const printView = document.getElementById("printYearView");
+  printView.style.display = "block";
+
+  // Trigger browser PDF export
+  window.print();
+
+  // Restore normal view after printing
+  printView.style.display = "none";
+});
 
     /* Event Modal */
     function openEventModal(dateStr, existingEvent = null) {
@@ -667,7 +857,10 @@ function getEventsForDate(dateStr) {
       classes.forEach(c => {
         const opt = document.createElement("option");
         opt.value = c.name;
-        opt.textContent = c.name;
+        opt.innerHTML = `
+  <img src="${classInsignia[c.name]}" style="width:18px; height:18px; vertical-align:middle; margin-right:6px;">
+  ${c.name}
+`;
 
         if (existingEvent?.classes?.includes(c.name)) {
           opt.selected = true;
