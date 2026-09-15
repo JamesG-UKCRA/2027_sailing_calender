@@ -347,10 +347,12 @@ const classInsignia = {
     ];
 
     /* Class Filters */
-     <div id="classToggle" style="margin-top:6px;">
+     <div id="classFilters"></div>
+       <div id="classToggle" style="margin-top:6px;">
   <button id="selectAllBtn">Select All</button>
   <button id="selectNoneBtn">Select None</button>
-</div>const activeClasses = {};
+</div>
+       const activeClasses = {};
     classes.forEach(c => activeClasses[c.name] = true);
 
     function initClassFilters() {
