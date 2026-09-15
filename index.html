@@ -262,41 +262,42 @@
   </div>
 
   <script>
-    /* Calendar State */
-    let currentYear = 2027;
-    let currentMonth = 0;
+/* Calendar State */
+let currentYear = 2027;
+let currentMonth = 0;
 
-    const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ];
+const monthNames = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
-    /* Class List */
-    const classes = [
-      { name: "A-Class", schrs: 0.99 },
-      { name: "Dart 15", schrs: 1.22 },
-      { name: "Dart 18", schrs: 1.13 },
-      { name: "F18", schrs: 1.04 },
-      { name: "F20", schrs: 1.01 },
-      { name: "Hurricane", schrs: 1.09 },
-      { name: "Nacra 15", schrs: 1.07 },
-      { name: "Shearwater", schrs: 1.15 },
-      { name: "Tornado", schrs: 0.96 },
-      { name: "Unicorn", schrs: 1.19 }
-    ];
+/* Class List */
+const classes = [
+  { name: "A-Class", schrs: 0.99 },
+  { name: "Dart 15", schrs: 1.22 },
+  { name: "Dart 18", schrs: 1.13 },
+  { name: "F18", schrs: 1.04 },
+  { name: "F20", schrs: 1.01 },
+  { name: "Hurricane", schrs: 1.09 },
+  { name: "Nacra 15", schrs: 1.07 },
+  { name: "Shearwater", schrs: 1.15 },
+  { name: "Tornado", schrs: 0.96 },
+  { name: "Unicorn", schrs: 1.19 }
+];
 
-    const classColors = {
-      "A-Class": "#0074D9",
-      "Dart 15": "#FF4136",
-      "Dart 18": "#2ECC40",
-      "F18": "#FF851B",
-      "F20": "#B10DC9",
-      "Hurricane": "#39CCCC",
-      "Nacra 15": "#85144b",
-      "Shearwater": "#3D9970",
-      "Tornado": "#001f3f",
-      "Unicorn": "#F012BE"
-    };
+const classColors = {
+  "A-Class": "#0074D9",
+  "Dart 15": "#FF4136",
+  "Dart 18": "#2ECC40",
+  "F18": "#FF851B",
+  "F20": "#B10DC9",
+  "Hurricane": "#39CCCC",
+  "Nacra 15": "#85144b",
+  "Shearwater": "#3D9970",
+  "Tornado": "#001f3f",
+  "Unicorn": "#F012BE"
+};
+
 const classInsignia = {
   "A-Class": "img/insignia_aclass.svg",
   "Dart 15": "img/insignia_dart15.svg",
@@ -310,95 +311,98 @@ const classInsignia = {
   "Unicorn": "img/insignia_unicorn.svg"
 };
 
+/* Multi-Day Expansion */
+function expandMultiDay(start, end) {
+  const dates = [];
+  let current = new Date(start);
+  const last = new Date(end);
 
-    /* Multi-Day Expansion */
-    function expandMultiDay(start, end) {
-      const dates = [];
-      let current = new Date(start);
-      const last = new Date(end);
+  while (current <= last) {
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
 
-      while (current <= last) {
-        dates.push(current.toISOString().split("T")[0]);
-        current.setDate(current.getDate() + 1);
-      }
-      return dates;
-    }
+/* CatFest Generator */
+function catfest(start, end, location) {
+  const days = expandMultiDay(start, end);
+  return days.flatMap(date =>
+    classes.map(cls => ({
+      date,
+      title: "Kingfisher CatFest",
+      location,
+      classes: [cls.name],
+      notes: "All classes"
+    }))
+  );
+}
 
-    /* CatFest Generator */
-    function catfest(start, end, location) {
-      const days = expandMultiDay(start, end);
-      return days.flatMap(date =>
-        classes.map(cls => ({
-          date,
-          title: "Kingfisher CatFest",
-          location,
-          classes: [cls.name],
-          notes: "All classes"
-        }))
-      );
-    }
+/* Default Events */
+const events = [
+  ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
+  ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
+  ...catfest("2027-10-16", "2027-10-17", "Grafham Water")
+];
 
-    /* Default Events */
-    const events = [
-     
-      ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
-      ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
-      ...catfest("2027-10-16", "2027-10-17", "Grafham Water")
-    ];
+/* Class Filters */
+const activeClasses = {};
+classes.forEach(c => activeClasses[c.name] = true);
 
-    /* Class Filters */
-     <div id="classFilters"></div>
-       <div id="classToggle" style="margin-top:6px;">
-  <button id="selectAllBtn">Select All</button>
-  <button id="selectNoneBtn">Select None</button>
-</div>
-       const activeClasses = {};
-    classes.forEach(c => activeClasses[c.name] = true);
+function initClassFilters() {
+  const container = document.getElementById("classFilters");
 
-    function initClassFilters() {
-   document.getElementById("selectAllBtn").onclick = () => {
-  classes.forEach(c => activeClasses[c.name] = true);
-  document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = true);
-  renderCalendar();
-};
+  classes.forEach(cls => {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
 
-document.getElementById("selectNoneBtn").onclick = () => {
-  classes.forEach(c => activeClasses[c.name] = false);
-  document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = false);
-  renderCalendar();
-};
-  
-const container = document.getElementById("classFilters");
-      classes.forEach(cls => {
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = true;
+    checkbox.addEventListener("change", () => {
+      activeClasses[cls.name] = checkbox.checked;
+      renderCalendar();
+    });
 
-        checkbox.addEventListener("change", () => {
-          activeClasses[cls.name] = checkbox.checked;
-          renderCalendar();
-        });
+    const label = document.createElement("label");
+    label.style.marginRight = "10px";
+    label.appendChild(checkbox);
 
-        const label = document.createElement("label");
-        label.style.marginRight = "10px";
-        label.appendChild(checkbox);
-        const img = document.createElement("img");
-img.src = classInsignia[cls.name];
-img.style.width = "26px";
-img.style.height = "26px";
-img.style.marginLeft = "6px";
-img.style.verticalAlign = "middle";
+    const img = document.createElement("img");
+    img.src = classInsignia[cls.name];
+    img.style.width = "26px";
+    img.style.height = "26px";
+    img.style.marginLeft = "6px";
+    img.style.verticalAlign = "middle";
 
-label.appendChild(img);
+    label.appendChild(img);
+    container.appendChild(label);
+  });
 
-        container.appendChild(label);
-      });
-    }
+  const selectAllBtn = document.getElementById("selectAllBtn");
+  const selectNoneBtn = document.getElementById("selectNoneBtn");
 
-    /* User Events */
-    let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
-    /* Event Lookup */
-   let searchQuery = "";
+  if (selectAllBtn) {
+    selectAllBtn.onclick = () => {
+      classes.forEach(c => activeClasses[c.name] = true);
+      document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = true);
+      renderCalendar();
+    };
+  }
+
+  if (selectNoneBtn) {
+    selectNoneBtn.onclick = () => {
+      classes.forEach(c => activeClasses[c.name] = false);
+      document.querySelectorAll("#classFilters input").forEach(cb => cb.checked = false);
+      renderCalendar();
+    };
+  }
+}
+
+/* User Events */
+let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
+
+/* Event Lookup */
+let searchQuery = "";
+
 function getEventsForDate(dateStr) {
   const all = [
     ...events,
@@ -418,212 +422,214 @@ function getEventsForDate(dateStr) {
   );
 }
 
-    /* Calendar Rendering */
-    const calendarGrid = document.getElementById("calendarGrid");
-    const monthLabel = document.getElementById("monthLabel");
-    const eventList = document.getElementById("eventList");
+/* Calendar Rendering */
+const calendarGrid = document.getElementById("calendarGrid");
+const monthLabel = document.getElementById("monthLabel");
+const eventList = document.getElementById("eventList");
 
-    function renderCalendar() {
-      calendarGrid.innerHTML = "";
+function renderCalendar() {
+  calendarGrid.innerHTML = "";
 
-      ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
-        const header = document.createElement("div");
-        header.className = "day-header";
-        header.textContent = d;
-        calendarGrid.appendChild(header);
-      });
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d => {
+    const header = document.createElement("div");
+    header.className = "day-header";
+    header.textContent = d;
+    calendarGrid.appendChild(header);
+  });
 
-      const firstDay = new Date(currentYear, currentMonth, 1);
-      const startWeekday = firstDay.getDay();
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-      monthLabel.textContent = monthNames[currentMonth] + " " + currentYear;
+  monthLabel.textContent = monthNames[currentMonth] + " " + currentYear;
 
-      for (let i = 0; i < startWeekday; i++) {
-        const emptyCell = document.createElement("div");
-        emptyCell.className = "day empty";
-        calendarGrid.appendChild(emptyCell);
+  for (let i = 0; i < startWeekday; i++) {
+    const emptyCell = document.createElement("div");
+    emptyCell.className = "day empty";
+    calendarGrid.appendChild(emptyCell);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "day";
+
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
+    /* Drag & Drop */
+    cell.addEventListener("dragover", e => e.preventDefault());
+    cell.addEventListener("drop", e => {
+      e.preventDefault();
+      const ev = JSON.parse(e.dataTransfer.getData("event"));
+      ev.date = dateStr;
+
+      const match = x =>
+        x.title === ev.title &&
+        x.location === ev.location &&
+        JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
+        x.notes === ev.notes &&
+        x.date === ev.date;
+
+      const idx = events.findIndex(match);
+      if (idx !== -1) events[idx].date = dateStr;
+
+      const uidx = userEvents.findIndex(match);
+      if (uidx !== -1) {
+        userEvents[uidx].date = dateStr;
+        localStorage.setItem("userEvents", JSON.stringify(userEvents));
       }
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const cell = document.createElement("div");
-        cell.className = "day";
+      renderCalendar();
+    });
 
-        const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    /* Add Button */
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "+";
+    addBtn.style.cssText = `
+      float:right;
+      padding:2px 6px;
+      font-size:10px;
+      margin-top:-4px;
+    `;
+    addBtn.onclick = e => {
+      e.stopPropagation();
+      openEventModal(dateStr);
+    };
+    cell.appendChild(addBtn);
 
-        /* Drag & Drop */
-        cell.addEventListener("dragover", e => e.preventDefault());
-        cell.addEventListener("drop", e => {
-          e.preventDefault();
-          const ev = JSON.parse(e.dataTransfer.getData("event"));
-          ev.date = dateStr;
+    /* Day Number */
+    const dayNumber = document.createElement("div");
+    dayNumber.className = "day-number";
+    dayNumber.textContent = day;
+    cell.appendChild(dayNumber);
 
-          const match = x =>
-            x.title === ev.title &&
-            x.location === ev.location &&
-            JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
-            x.notes === ev.notes &&
-            x.date === ev.date;
+    /* Events */
+    const dayEvents = getEventsForDate(dateStr);
 
-          const idx = events.findIndex(match);
-          if (idx !== -1) events[idx].date = dateStr;
+    if (dayEvents.length > 0) {
+      dayEvents.forEach(ev => {
+        ev.classes.forEach(cls => {
+          const row = document.createElement("div");
+          row.className = "eventRow";
+          row.draggable = true;
 
-          const uidx = userEvents.findIndex(match);
-          if (uidx !== -1) {
-            userEvents[uidx].date = dateStr;
-            localStorage.setItem("userEvents", JSON.stringify(userEvents));
-          }
-
-          renderCalendar();
-        });
-
-        /* Add Button */
-        const addBtn = document.createElement("button");
-        addBtn.textContent = "+";
-        addBtn.style.cssText = `
-          float:right;
-          padding:2px 6px;
-          font-size:10px;
-          margin-top:-4px;
-        `;
-        addBtn.onclick = e => {
-          e.stopPropagation();
-          openEventModal(dateStr);
-        };
-        cell.appendChild(addBtn);
-
-        /* Day Number */
-        const dayNumber = document.createElement("div");
-        dayNumber.className = "day-number";
-        dayNumber.textContent = day;
-        cell.appendChild(dayNumber);
-
-        /* Events */
-        const dayEvents = getEventsForDate(dateStr);
-
-        if (dayEvents.length > 0) {
-          dayEvents.forEach(ev => {
-
-            ev.classes.forEach(cls => {
-              const row = document.createElement("div");
-              row.className = "eventRow";
-              row.draggable = true;
-
-              row.addEventListener("dragstart", e => {
-                e.dataTransfer.setData("event", JSON.stringify(ev));
-              });
-
-             row.innerHTML = `
-  <img src="${classInsignia[cls]}" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;">
-  <strong>${ev.title}</strong>
-  <br>
-  <span style="opacity:0.7;">${ev.location}</span>
-`;
- 
-
-              /* Edit Button */
-              const editBtn = document.createElement("span");
-              editBtn.textContent = " ✎";
-              editBtn.style.cursor = "pointer";
-              editBtn.style.color = classColors[cls];
-              editBtn.onclick = e => {
-                e.stopPropagation();
-                openEventModal(dateStr, ev);
-              };
-              row.appendChild(editBtn);
-
-              /* Delete Button */
-              const deleteBtn = document.createElement("span");
-              deleteBtn.textContent = " 🗑️";
-              deleteBtn.style.cursor = "pointer";
-              deleteBtn.style.color = "red";
-              deleteBtn.onclick = e => {
-                e.stopPropagation();
-
-                const match = x =>
-                  x.title === ev.title &&
-                  x.location === ev.location &&
-                  JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
-                  x.notes === ev.notes &&
-                  x.date === ev.date;
-
-                const uidx = userEvents.findIndex(match);
-                if (uidx !== -1) {
-                  userEvents.splice(uidx, 1);
-                  localStorage.setItem("userEvents", JSON.stringify(userEvents));
-                }
-
-                const idx = events.findIndex(match);
-                if (idx !== -1) events.splice(idx, 1);
-
-                renderCalendar();
-              };
-              row.appendChild(deleteBtn);
-
-              cell.appendChild(row);
-            });
+          row.addEventListener("dragstart", e => {
+            e.dataTransfer.setData("event", JSON.stringify(ev));
           });
 
-          cell.addEventListener("click", () => showEvents(dateStr, dayEvents));
-        } else {
-          cell.addEventListener("click", () => showEvents(dateStr, []));
-        }
+          row.innerHTML = `
+            <img src="${classInsignia[cls]}" style="width:18px; height:18px; vertical-align:middle; margin-right:4px;">
+            <strong>${ev.title}</strong>
+            <br>
+            <span style="opacity:0.7;">${ev.location}</span>
+          `;
 
-        calendarGrid.appendChild(cell);
-      }
-    }
+          /* Edit Button */
+          const editBtn = document.createElement("span");
+          editBtn.textContent = " ✎";
+          editBtn.style.cursor = "pointer";
+          editBtn.style.color = classColors[cls];
+          editBtn.onclick = e => {
+            e.stopPropagation();
+            openEventModal(dateStr, ev);
+          };
+          row.appendChild(editBtn);
 
-    /* Event Details Panel */
-    function showEvents(dateStr, dayEvents) {
-      const dateObj = new Date(dateStr);
-      let html = `<strong>${dateObj.toDateString()}</strong><br>`;
+          /* Delete Button */
+          const deleteBtn = document.createElement("span");
+          deleteBtn.textContent = " 🗑️";
+          deleteBtn.style.cursor = "pointer";
+          deleteBtn.style.color = "red";
+          deleteBtn.onclick = e => {
+            e.stopPropagation();
 
-      if (dayEvents.length === 0) {
-        html += "No events for selected classes.";
-      } else {
-        html += "<ul>";
-        dayEvents.forEach(ev => {
-        const icons = ev.classes
-  .filter(c => activeClasses[c])
-  .map(c => `<img src="${classInsignia[c]}" style="width:18px; height:18px; margin-right:4px;">`)
-  .join("");
+            const match = x =>
+              x.title === ev.title &&
+              x.location === ev.location &&
+              JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
+              x.notes === ev.notes &&
+              x.date === ev.date;
 
-html += `
-  <li>
-    ${icons}
-    <strong>${ev.title}</strong> – ${ev.location}
-    <br>${ev.notes}
-  </li>
-`;
- classes.join(", ")}<br>${ev.notes}</li>`;
+            const uidx = userEvents.findIndex(match);
+            if (uidx !== -1) {
+              userEvents.splice(uidx, 1);
+              localStorage.setItem("userEvents", JSON.stringify(userEvents));
+            }
+
+            const idx = events.findIndex(match);
+            if (idx !== -1) events.splice(idx, 1);
+
+            renderCalendar();
+          };
+          row.appendChild(deleteBtn);
+
+          cell.appendChild(row);
         });
-        html += "</ul>";
-      }
+      });
 
-      eventList.innerHTML = html;
+      cell.addEventListener("click", () => showEvents(dateStr, dayEvents));
+    } else {
+      cell.addEventListener("click", () => showEvents(dateStr, []));
     }
 
-    /* Month Navigation */
-    document.getElementById("prevMonth").addEventListener("click", () => {
-      currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      renderCalendar();
-    });
+    calendarGrid.appendChild(cell);
+  }
+}
 
-    document.getElementById("nextMonth").addEventListener("click", () => {
-      currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-      renderCalendar();
+/* Event Details Panel */
+function showEvents(dateStr, dayEvents) {
+  const dateObj = new Date(dateStr);
+  let html = `<strong>${dateObj.toDateString()}</strong><br>`;
+
+  if (dayEvents.length === 0) {
+    html += "No events for selected classes.";
+  } else {
+    html += "<ul>";
+    dayEvents.forEach(ev => {
+      const icons = ev.classes
+        .filter(c => activeClasses[c])
+        .map(c => `<img src="${classInsignia[c]}" style="width:18px; height:18px; margin-right:4px;">`)
+        .join("");
+
+      html += `
+        <li>
+          ${icons}
+          <strong>${ev.title}</strong> – ${ev.location}
+          <br>${ev.notes}
+        </li>
+      `;
     });
-   document.getElementById("eventSearchInput").addEventListener("input", e => {
-  searchQuery = e.target.value.toLowerCase();
+    html += "</ul>";
+  }
+
+  eventList.innerHTML = html;
+}
+
+/* Month Navigation */
+document.getElementById("prevMonth").addEventListener("click", () => {
+  currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
   renderCalendar();
 });
- 
-    /* Print Year View */
-   function buildPrintYearViewFiltered() {
+
+document.getElementById("nextMonth").addEventListener("click", () => {
+  currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+  renderCalendar();
+});
+
+/* Search Input */
+const searchInput = document.getElementById("eventSearchInput");
+if (searchInput) {
+  searchInput.addEventListener("input", e => {
+    searchQuery = e.target.value.toLowerCase();
+    renderCalendar();
+  });
+}
+
+/* Print Year View (Full Year) */
+function buildPrintYearView() {
   const yearGrid = document.getElementById("yearGrid");
   const printTitle = document.getElementById("printYearTitle");
 
-  printTitle.textContent = currentYear + " Sailing Calendar – Selected Classes";
+  printTitle.textContent = currentYear + " Sailing Calendar – Full Year";
   yearGrid.innerHTML = "";
 
   for (let m = 0; m < 12; m++) {
@@ -657,25 +663,22 @@ html += `
       cell.className = "miniDay";
 
       const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
       const dayEvents = [
         ...events.filter(ev => ev.date === dateStr),
         ...userEvents.filter(ev => ev.date === dateStr)
-      ].filter(ev => ev.classes.some(c => activeClasses[c]));
+      ];
 
       cell.textContent = d + " ";
 
       dayEvents.forEach(ev => {
-        ev.classes
-          .filter(cls => activeClasses[cls])
-          .forEach(cls => {
+        ev.classes.forEach(cls => {
           const icon = document.createElement("img");
-icon.src = classInsignia[cls];
-icon.style.width = "10px";
-icon.style.height = "10px";
-icon.style.marginLeft = "2px";
-cell.appendChild(icon);  
-          });
+          icon.src = classInsignia[cls];
+          icon.style.width = "10px";
+          icon.style.height = "10px";
+          icon.style.marginLeft = "2px";
+          cell.appendChild(icon);
+        });
       });
 
       miniGrid.appendChild(cell);
@@ -685,67 +688,8 @@ cell.appendChild(icon);
     yearGrid.appendChild(block);
   }
 }
- function buildPrintYearView() {
-      const yearGrid = document.getElementById("yearGrid");
-      const printTitle = document.getElementById("printYearTitle");
 
-      printTitle.textContent = currentYear + " Sailing Calendar – Full Year";
-      yearGrid.innerHTML = "";
-
-      for (let m = 0; m < 12; m++) {
-        const block = document.createElement("div");
-        block.className = "monthBlock";
-
-        const title = document.createElement("h2");
-        title.textContent = monthNames[m] + " " + currentYear;
-        block.appendChild(title);
-
-        const miniGrid = document.createElement("div");
-        miniGrid.className = "monthMiniGrid";
-
-        ["S","M","T","W","T","F","S"].forEach(d => {
-          const hd = document.createElement("div");
-          hd.textContent = d;
-          hd.style.fontWeight = "bold";
-          miniGrid.appendChild(hd);
-        });
-
-        const firstDay = new Date(currentYear, m, 1);
-        const startWeekday = firstDay.getDay();
-        const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
-
-        for (let i = 0; i < startWeekday; i++) {
-          miniGrid.appendChild(document.createElement("div"));
-        }
-
-        for (let d = 1; d <= daysInMonth; d++) {
-          const cell = document.createElement("div");
-          cell.className = "miniDay";
-
-          const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-          const dayEvents = [
-            ...events.filter(ev => ev.date === dateStr),
-            ...userEvents.filter(ev => ev.date === dateStr)
-          ];
-
-          cell.textContent = d + " ";
-
-          dayEvents.forEach(ev => {
-            ev.classes.forEach(cls => {
-              const dot = document.createElement("span");
-              dot.className = "miniDot";
-              dot.style.backgroundColor = classColors[cls];
-              cell.appendChild(dot);
-            });
-          });
-
-          miniGrid.appendChild(cell);
-        }
-
-        block.appendChild(miniGrid);
-        yearGrid.appendChild(block);
-      }
-    }
+/* Print Year View (Selected Classes Only) */
 function buildPrintYearViewFiltered() {
   const yearGrid = document.getElementById("yearGrid");
   const printTitle = document.getElementById("printYearTitle");
@@ -813,92 +757,98 @@ function buildPrintYearViewFiltered() {
   }
 }
 
-  // Build the full-year layout
-  buildPrintYearView();
+/* Print Buttons */
+const printYearBtn = document.getElementById("printYearBtn");
+if (printYearBtn) {
+  printYearBtn.addEventListener("click", () => {
+    buildPrintYearView();
+    window.print();
+  });
+}
 
-  // Force print mode
-  const printView = document.getElementById("printYearView");
-  printView.style.display = "block";
+const exportPdfBtn = document.getElementById("exportPdfBtn");
+if (exportPdfBtn) {
+  exportPdfBtn.addEventListener("click", () => {
+    buildPrintYearViewFiltered();
 
-  // Trigger browser PDF export
-  window.print();
+    const printView = document.getElementById("printYearView");
+    printView.style.display = "block";
 
-  // Restore normal view after printing
-  printView.style.display = "none";
-});
+    window.print();
 
-    /* Event Modal */
-    function openEventModal(dateStr, existingEvent = null) {
-      const modal = document.getElementById("eventModal");
-      modal.style.display = "flex";
+    printView.style.display = "none";
+  });
+}
 
-      document.getElementById("modalDate").value = dateStr;
-      document.getElementById("modalTitleInput").value = existingEvent?.title || "";
-      document.getElementById("modalLocationInput").value = existingEvent?.location || "";
-      document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
+/* Event Modal */
+function openEventModal(dateStr, existingEvent = null) {
+  const modal = document.getElementById("eventModal");
+  modal.style.display = "flex";
 
-      /* Populate multi-select class list */
-      const classSelect = document.getElementById("modalClassInput");
-      classSelect.innerHTML = "";
+  document.getElementById("modalDate").value = dateStr;
+  document.getElementById("modalTitleInput").value = existingEvent?.title || "";
+  document.getElementById("modalLocationInput").value = existingEvent?.location || "";
+  document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
 
-      classes.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.name;
-        opt.innerHTML = `
-  <img src="${classInsignia[c.name]}" style="width:18px; height:18px; vertical-align:middle; margin-right:6px;">
-  ${c.name}
-`;
+  const classSelect = document.getElementById("modalClassInput");
+  classSelect.innerHTML = "";
 
-        if (existingEvent?.classes?.includes(c.name)) {
-          opt.selected = true;
-        }
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.name;
+    opt.innerHTML = `
+      <img src="${classInsignia[c.name]}" style="width:18px; height:18px; vertical-align:middle; margin-right:6px;">
+      ${c.name}
+    `;
 
-        classSelect.appendChild(opt);
-      });
-
-      /* Save event */
-      document.getElementById("modalSaveBtn").onclick = () => {
-        const selectedClasses = Array.from(classSelect.selectedOptions).map(opt => opt.value);
-
-        const newEvent = {
-          date: document.getElementById("modalDate").value,
-          title: document.getElementById("modalTitleInput").value,
-          location: document.getElementById("modalLocationInput").value,
-          classes: selectedClasses,
-          notes: document.getElementById("modalNotesInput").value
-        };
-
-        const match = x =>
-          x.title === existingEvent?.title &&
-          x.location === existingEvent?.location &&
-          JSON.stringify(x.classes) === JSON.stringify(existingEvent?.classes) &&
-          x.notes === existingEvent?.notes &&
-          x.date === existingEvent?.date;
-
-        if (existingEvent) {
-          const idx = userEvents.findIndex(match);
-          if (idx !== -1) {
-            userEvents[idx] = newEvent;
-          }
-        } else {
-          userEvents.push(newEvent);
-        }
-
-        localStorage.setItem("userEvents", JSON.stringify(userEvents));
-        modal.style.display = "none";
-        renderCalendar();
-      };
-
-      /* Cancel */
-      document.getElementById("modalCancelBtn").onclick = () => {
-        modal.style.display = "none";
-      };
+    if (existingEvent?.classes?.includes(c.name)) {
+      opt.selected = true;
     }
 
-    /* Init */
-    initClassFilters();
-    renderCalendar();
-  </script>
+    classSelect.appendChild(opt);
+  });
 
+  document.getElementById("modalSaveBtn").onclick = () => {
+    const selectedClasses = Array.from(classSelect.selectedOptions).map(opt => opt.value);
+
+    const newEvent = {
+      date: document.getElementById("modalDate").value,
+      title: document.getElementById("modalTitleInput").value,
+      location: document.getElementById("modalLocationInput").value,
+      classes: selectedClasses,
+      notes: document.getElementById("modalNotesInput").value
+    };
+
+    const match = x =>
+      x.title === existingEvent?.title &&
+      x.location === existingEvent?.location &&
+      JSON.stringify(x.classes) === JSON.stringify(existingEvent?.classes) &&
+      x.notes === existingEvent?.notes &&
+      x.date === existingEvent?.date;
+
+    if (existingEvent) {
+      const idx = userEvents.findIndex(match);
+      if (idx !== -1) {
+        userEvents[idx] = newEvent;
+      }
+    } else {
+      userEvents.push(newEvent);
+    }
+
+    localStorage.setItem("userEvents", JSON.stringify(userEvents));
+    modal.style.display = "none";
+    renderCalendar();
+  };
+
+  document.getElementById("modalCancelBtn").onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+/* Init */
+initClassFilters();
+renderCalendar();
+
+</script>
 </body>
 </html>
