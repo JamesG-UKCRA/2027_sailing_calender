@@ -1,5 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140">
-  <rect width="140" height="140" fill="white"/>
-  <path d="M95 25 L120 10 L110 40 L95 25 Z" fill="#000"/>
-  <path d="M40 100 Q30 70 50 50 Q60 30 85 35 Q110 40 115 65 Q120 90 95 110 Q70 130 50 120 Q35 110 40 100 Z" fill="#000"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140">
+  <path fill="#000" d="
+    M95 25 L120 10 L110 40 L95 25 Z
+    M40 100
+      Q30 70 50 50
+      Q60 30 85 35
+      Q110 40 115 65
+      Q120 90 95 110
+      Q70 130 50 120
+      Q35 110 40 100 Z
+  "/>
 </svg>
