@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140">
+  <rect width="140" height="140" fill="white"/>
+  <polygon points="25,115 55,25 85,115" fill="#85144b"/>
+  <polygon points="55,115 95,35 115,115" fill="#85144b" opacity="0.8"/>
+  <text x="70" y="135" font-size="20" text-anchor="middle" fill="#85144b" font-family="Arial">N15</text>
+</svg>
