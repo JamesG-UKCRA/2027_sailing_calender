@@ -664,6 +664,8 @@ function openEventModal(dateStr, existingEvent = null) {
     modal.style.display = "none";
   };
 }
+
+/* Print Year View (Full Year) */
 function buildPrintYearView() {
   const yearGrid = document.getElementById("yearGrid");
   const printTitle = document.getElementById("printYearTitle");
@@ -727,6 +729,8 @@ function buildPrintYearView() {
     yearGrid.appendChild(block);
   }
 }
+
+/* Print Year View (Filtered) */
 function buildPrintYearViewFiltered() {
   const yearGrid = document.getElementById("yearGrid");
   const printTitle = document.getElementById("printYearTitle");
@@ -793,13 +797,13 @@ function buildPrintYearViewFiltered() {
     yearGrid.appendChild(block);
   }
 }
-/* Print Year View (Full Year) */
+
+/* Print Buttons */
 document.getElementById("printYearBtn").addEventListener("click", () => {
   buildPrintYearView();
   window.print();
 });
 
-/* Print Year View (Filtered) */
 document.getElementById("exportPdfBtn").addEventListener("click", () => {
   buildPrintYearViewFiltered();
 
