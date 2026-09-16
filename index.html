@@ -344,7 +344,7 @@ function getEventsForDate(dateStr) {
 
   return all.filter(ev =>
     ev.date === dateStr &&
-    ev.classes.some(c => activeClasses[c]) &&
+    ev.classes?.some(c => activeClasses[c]) &&
     (
       searchQuery === "" ||
       ev.title.toLowerCase().includes(searchQuery) ||
@@ -482,7 +482,7 @@ function renderCalendar() {
 
     if (dayEvents.length > 0) {
       dayEvents.forEach(ev => {
-        ev.classes.forEach(cls => {
+        (ev.classes || []).forEach(cls => {
           const row = document.createElement("div");
           row.className = "eventRow";
           row.draggable = true;
@@ -555,7 +555,7 @@ function showEvents(dateStr, dayEvents) {
   } else {
     html += "<ul>";
     dayEvents.forEach(ev => {
-      const labels = ev.classes
+      const labels = (ev.classes || [])
         .filter(c => activeClasses[c])
         .map(c => `<span class="classLabelInline">${c}</span>`)
         .join("");
@@ -712,7 +712,7 @@ function buildPrintYearView() {
       cell.textContent = d + " ";
 
       dayEvents.forEach(ev => {
-        ev.classes.forEach(cls => {
+        (ev.classes || []).forEach(cls => {
           const txt = document.createElement("span");
           txt.textContent = cls;
           txt.style.fontSize = "8px";
@@ -773,12 +773,12 @@ function buildPrintYearViewFiltered() {
       const dayEvents = [
         ...events.filter(ev => ev.date === dateStr),
         ...userEvents.filter(ev => ev.date === dateStr)
-      ].filter(ev => ev.classes.some(c => activeClasses[c]));
+      ].filter(ev => (ev.classes || []).some(c => activeClasses[c]));
 
       cell.textContent = d + " ";
 
       dayEvents.forEach(ev => {
-        ev.classes
+        (ev.classes || [])
           .filter(cls => activeClasses[cls])
           .forEach(cls => {
             const txt = document.createElement("span");
@@ -824,6 +824,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", () => {
 /* Init */
 initClassFilters();
 renderCalendar();
+
 /* DEBUG OVERLAY */
 (function () {
   const box = document.createElement("div");
@@ -848,7 +849,6 @@ renderCalendar();
     box.innerHTML = msg;
   }
 
-  /* Hook print functions */
   const oldFull = buildPrintYearView;
   buildPrintYearView = function () {
     log("buildPrintYearView() called");
@@ -861,14 +861,12 @@ renderCalendar();
     return oldFiltered.apply(this, arguments);
   };
 
-  /* Hook calendar render */
   const oldRender = renderCalendar;
   renderCalendar = function () {
     log("renderCalendar() running");
     return oldRender.apply(this, arguments);
   };
 
-  /* Hook print buttons */
   document.getElementById("printYearBtn").addEventListener("click", () => {
     log("Print Full Year button clicked");
   });
@@ -879,5 +877,6 @@ renderCalendar();
 
 })();
 </script>
+
 </body>
 </html>
