@@ -801,7 +801,13 @@ function buildPrintYearViewFiltered() {
 /* Print Buttons */
 document.getElementById("printYearBtn").addEventListener("click", () => {
   buildPrintYearView();
+
+  const printView = document.getElementById("printYearView");
+  printView.style.display = "block";
+
   window.print();
+
+  printView.style.display = "none";
 });
 
 document.getElementById("exportPdfBtn").addEventListener("click", () => {
