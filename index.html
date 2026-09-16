@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <title>2027 Sailing Calendar</title>
 
+<!-- Real PDF Export Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -344,13 +347,13 @@ function getEventsForDate(dateStr) {
 
   return all.filter(ev =>
     ev.date === dateStr &&
-    ev.classes?.some(c => activeClasses[c]) &&
+    (ev.classes || []).some(c => activeClasses[c]) &&
     (
       searchQuery === "" ||
       ev.title.toLowerCase().includes(searchQuery) ||
       ev.location.toLowerCase().includes(searchQuery) ||
       ev.notes.toLowerCase().includes(searchQuery) ||
-      ev.classes.some(c => c.toLowerCase().includes(searchQuery))
+      (ev.classes || []).some(c => c.toLowerCase().includes(searchQuery))
     )
   );
 }
@@ -810,72 +813,29 @@ document.getElementById("printYearBtn").addEventListener("click", () => {
   printView.style.display = "none";
 });
 
+/* REAL PDF EXPORT — NO PRINT DIALOG */
 document.getElementById("exportPdfBtn").addEventListener("click", () => {
   buildPrintYearViewFiltered();
 
   const printView = document.getElementById("printYearView");
   printView.style.display = "block";
 
-  window.print();
+  const opt = {
+    margin:       0.5,
+    filename:     `Sailing_Calendar_${currentYear}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+  };
 
-  printView.style.display = "none";
+  html2pdf().set(opt).from(printView).save().then(() => {
+    printView.style.display = "none";
+  });
 });
 
 /* Init */
 initClassFilters();
 renderCalendar();
-
-/* DEBUG OVERLAY */
-(function () {
-  const box = document.createElement("div");
-  box.id = "debugOverlay";
-  box.style.position = "fixed";
-  box.style.bottom = "10px";
-  box.style.right = "10px";
-  box.style.background = "rgba(0,0,0,0.75)";
-  box.style.color = "#0f0";
-  box.style.padding = "10px";
-  box.style.fontSize = "12px";
-  box.style.fontFamily = "monospace";
-  box.style.zIndex = "99999";
-  box.style.border = "1px solid #0f0";
-  box.style.borderRadius = "4px";
-  box.style.maxWidth = "260px";
-  box.style.pointerEvents = "none";
-  box.innerHTML = "Debug overlay active…";
-  document.body.appendChild(box);
-
-  function log(msg) {
-    box.innerHTML = msg;
-  }
-
-  const oldFull = buildPrintYearView;
-  buildPrintYearView = function () {
-    log("buildPrintYearView() called");
-    return oldFull.apply(this, arguments);
-  };
-
-  const oldFiltered = buildPrintYearViewFiltered;
-  buildPrintYearViewFiltered = function () {
-    log("buildPrintYearViewFiltered() called");
-    return oldFiltered.apply(this, arguments);
-  };
-
-  const oldRender = renderCalendar;
-  renderCalendar = function () {
-    log("renderCalendar() running");
-    return oldRender.apply(this, arguments);
-  };
-
-  document.getElementById("printYearBtn").addEventListener("click", () => {
-    log("Print Full Year button clicked");
-  });
-
-  document.getElementById("exportPdfBtn").addEventListener("click", () => {
-    log("Export PDF button clicked");
-  });
-
-})();
 </script>
 
 </body>
