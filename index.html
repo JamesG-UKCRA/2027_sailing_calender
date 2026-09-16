@@ -664,6 +664,135 @@ function openEventModal(dateStr, existingEvent = null) {
     modal.style.display = "none";
   };
 }
+function buildPrintYearView() {
+  const yearGrid = document.getElementById("yearGrid");
+  const printTitle = document.getElementById("printYearTitle");
+
+  printTitle.textContent = currentYear + " Sailing Calendar – Full Year";
+  yearGrid.innerHTML = "";
+
+  for (let m = 0; m < 12; m++) {
+    const block = document.createElement("div");
+    block.className = "monthBlock";
+
+    const title = document.createElement("h2");
+    title.textContent = monthNames[m] + " " + currentYear;
+    block.appendChild(title);
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "monthMiniGrid";
+
+    ["S","M","T","W","T","F","S"].forEach(d => {
+      const hd = document.createElement("div");
+      hd.textContent = d;
+      hd.style.fontWeight = "bold";
+      miniGrid.appendChild(hd);
+    });
+
+    const firstDay = new Date(currentYear, m, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startWeekday; i++) {
+      miniGrid.appendChild(document.createElement("div"));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "miniDay";
+
+      const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayEvents = [
+        ...events.filter(ev => ev.date === dateStr),
+        ...userEvents.filter(ev => ev.date === dateStr)
+      ];
+
+      cell.textContent = d + " ";
+
+      dayEvents.forEach(ev => {
+        ev.classes.forEach(cls => {
+          const txt = document.createElement("span");
+          txt.textContent = cls;
+          txt.style.fontSize = "8px";
+          txt.style.marginLeft = "2px";
+          txt.style.display = "block";
+          cell.appendChild(txt);
+        });
+      });
+
+      miniGrid.appendChild(cell);
+    }
+
+    block.appendChild(miniGrid);
+    yearGrid.appendChild(block);
+  }
+}
+function buildPrintYearViewFiltered() {
+  const yearGrid = document.getElementById("yearGrid");
+  const printTitle = document.getElementById("printYearTitle");
+
+  printTitle.textContent = currentYear + " Sailing Calendar – Selected Classes";
+  yearGrid.innerHTML = "";
+
+  for (let m = 0; m < 12; m++) {
+    const block = document.createElement("div");
+    block.className = "monthBlock";
+
+    const title = document.createElement("h2");
+    title.textContent = monthNames[m] + " " + currentYear;
+    block.appendChild(title);
+
+    const miniGrid = document.createElement("div");
+    miniGrid.className = "monthMiniGrid";
+
+    ["S","M","T","W","T","F","S"].forEach(d => {
+      const hd = document.createElement("div");
+      hd.textContent = d;
+      hd.style.fontWeight = "bold";
+      miniGrid.appendChild(hd);
+    });
+
+    const firstDay = new Date(currentYear, m, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+
+    for (let i = 0; i < startWeekday; i++) {
+      miniGrid.appendChild(document.createElement("div"));
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "miniDay";
+
+      const dateStr = `${currentYear}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+
+      const dayEvents = [
+        ...events.filter(ev => ev.date === dateStr),
+        ...userEvents.filter(ev => ev.date === dateStr)
+      ].filter(ev => ev.classes.some(c => activeClasses[c]));
+
+      cell.textContent = d + " ";
+
+      dayEvents.forEach(ev => {
+        ev.classes
+          .filter(cls => activeClasses[cls])
+          .forEach(cls => {
+            const txt = document.createElement("span");
+            txt.textContent = cls;
+            txt.style.fontSize = "8px";
+            txt.style.marginLeft = "2px";
+            txt.style.display = "block";
+            cell.appendChild(txt);
+          });
+      });
+
+      miniGrid.appendChild(cell);
+    }
+
+    block.appendChild(miniGrid);
+    yearGrid.appendChild(block);
+  }
+}
 
 /* Print Year View (Full Year) */
 document.getElementById("printYearBtn").addEventListener("click", () => {
