@@ -824,6 +824,60 @@ document.getElementById("exportPdfBtn").addEventListener("click", () => {
 /* Init */
 initClassFilters();
 renderCalendar();
+/* DEBUG OVERLAY */
+(function () {
+  const box = document.createElement("div");
+  box.id = "debugOverlay";
+  box.style.position = "fixed";
+  box.style.bottom = "10px";
+  box.style.right = "10px";
+  box.style.background = "rgba(0,0,0,0.75)";
+  box.style.color = "#0f0";
+  box.style.padding = "10px";
+  box.style.fontSize = "12px";
+  box.style.fontFamily = "monospace";
+  box.style.zIndex = "99999";
+  box.style.border = "1px solid #0f0";
+  box.style.borderRadius = "4px";
+  box.style.maxWidth = "260px";
+  box.style.pointerEvents = "none";
+  box.innerHTML = "Debug overlay active…";
+  document.body.appendChild(box);
+
+  function log(msg) {
+    box.innerHTML = msg;
+  }
+
+  /* Hook print functions */
+  const oldFull = buildPrintYearView;
+  buildPrintYearView = function () {
+    log("buildPrintYearView() called");
+    return oldFull.apply(this, arguments);
+  };
+
+  const oldFiltered = buildPrintYearViewFiltered;
+  buildPrintYearViewFiltered = function () {
+    log("buildPrintYearViewFiltered() called");
+    return oldFiltered.apply(this, arguments);
+  };
+
+  /* Hook calendar render */
+  const oldRender = renderCalendar;
+  renderCalendar = function () {
+    log("renderCalendar() running");
+    return oldRender.apply(this, arguments);
+  };
+
+  /* Hook print buttons */
+  document.getElementById("printYearBtn").addEventListener("click", () => {
+    log("Print Full Year button clicked");
+  });
+
+  document.getElementById("exportPdfBtn").addEventListener("click", () => {
+    log("Export PDF button clicked");
+  });
+
+})();
 </script>
 </body>
 </html>
