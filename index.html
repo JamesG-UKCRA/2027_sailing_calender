@@ -62,7 +62,6 @@
     border-bottom: 1px solid #eee;
   }
 
-  /* TEXT-ONLY CLASS LABELS */
   .classLabel {
     font-size: 10px;
     font-weight: bold;
@@ -71,7 +70,6 @@
     margin-top: 2px;
   }
 
-  /* Inline labels for event list */
   .classLabelInline {
     font-size: 10px;
     font-weight: bold;
@@ -209,7 +207,7 @@
     <input id="modalLocationInput" type="text" style="width:100%; margin-bottom:10px;">
 
     <label>Classes:</label>
-    <select id="modalClassInput" multiple style="width:100%; margin-bottom:10px; height:120px;"></select>
+    <div id="modalClassCheckboxes" style="margin-bottom:10px;"></div>
 
     <label>Notes:</label>
     <textarea id="modalNotesInput" style="width:100%; height:60px; margin-bottom:10px;"></textarea>
@@ -220,6 +218,16 @@
 </div>
 
 <script>
+/* Detect localStorage availability */
+let storageOK = true;
+try {
+  localStorage.setItem("storage_test", "1");
+  localStorage.removeItem("storage_test");
+} catch {
+  storageOK = false;
+  alert("Your browser is blocking event saving (private browsing or security mode). Events will not be saved.");
+}
+
 /* Calendar State */
 let currentYear = 2027;
 let currentMonth = 0;
@@ -326,7 +334,7 @@ function initClassFilters() {
 }
 
 /* User Events */
-let userEvents = JSON.parse(localStorage.getItem("userEvents") || "[]");
+let userEvents = storageOK ? JSON.parse(localStorage.getItem("userEvents") || "[]") : [];
 
 /* Event Lookup */
 let searchQuery = "";
@@ -345,6 +353,36 @@ function getEventsForDate(dateStr) {
       ev.classes.some(c => c.toLowerCase().includes(searchQuery))
     )
   );
+}
+
+/* Build Class Checkboxes */
+function buildClassCheckboxes(selected = []) {
+  const box = document.getElementById("modalClassCheckboxes");
+  box.innerHTML = "";
+
+  classes.forEach(c => {
+    const wrap = document.createElement("label");
+    wrap.style.display = "block";
+    wrap.style.marginBottom = "4px";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = c.name;
+    cb.checked = selected.includes(c.name);
+
+    wrap.appendChild(cb);
+    wrap.append(" " + c.name);
+    box.appendChild(wrap);
+  });
+}
+
+/* Safari-safe drag data */
+function safeDragData(ev) {
+  try {
+    event.dataTransfer.setData("text/plain", JSON.stringify(ev));
+  } catch {
+    window._dragEvent = ev;
+  }
 }
 
 /* Calendar Rendering */
@@ -384,7 +422,19 @@ function renderCalendar() {
     cell.addEventListener("dragover", e => e.preventDefault());
     cell.addEventListener("drop", e => {
       e.preventDefault();
-      const ev = JSON.parse(e.dataTransfer.getData("event"));
+
+      let ev;
+      try {
+        ev = JSON.parse(e.dataTransfer.getData("text/plain"));
+      } catch {
+        ev = window._dragEvent;
+      }
+
+      if (!ev) {
+        alert("Your browser does not support drag-and-drop for events.");
+        return;
+      }
+
       ev.date = dateStr;
 
       const match = x =>
@@ -400,7 +450,7 @@ function renderCalendar() {
       const uidx = userEvents.findIndex(match);
       if (uidx !== -1) {
         userEvents[uidx].date = dateStr;
-        localStorage.setItem("userEvents", JSON.stringify(userEvents));
+        if (storageOK) localStorage.setItem("userEvents", JSON.stringify(userEvents));
       }
 
       renderCalendar();
@@ -437,18 +487,14 @@ function renderCalendar() {
           row.className = "eventRow";
           row.draggable = true;
 
-          row.addEventListener("dragstart", e => {
-            e.dataTransfer.setData("event", JSON.stringify(ev));
-          });
+          row.addEventListener("dragstart", e => safeDragData(ev));
 
-          /* TEXT LABEL */
           const label = document.createElement("div");
           label.className = "classLabel";
           label.textContent = cls;
 
           row.appendChild(label);
 
-          /* Edit Button */
           const editBtn = document.createElement("span");
           editBtn.textContent = " ✎";
           editBtn.style.cursor = "pointer";
@@ -459,7 +505,6 @@ function renderCalendar() {
           };
           row.appendChild(editBtn);
 
-          /* Delete Button */
           const deleteBtn = document.createElement("span");
           deleteBtn.textContent = " 🗑️";
           deleteBtn.style.cursor = "pointer";
@@ -477,7 +522,7 @@ function renderCalendar() {
             const uidx = userEvents.findIndex(match);
             if (uidx !== -1) {
               userEvents.splice(uidx, 1);
-              localStorage.setItem("userEvents", JSON.stringify(userEvents));
+              if (storageOK) localStorage.setItem("userEvents", JSON.stringify(userEvents));
             }
 
             const idx = events.findIndex(match);
@@ -549,10 +594,98 @@ if (searchInput) {
   });
 }
 
+/* Event Modal */
+function openEventModal(dateStr, existingEvent = null) {
+  const modal = document.getElementById("eventModal");
+  modal.style.display = "flex";
+
+  document.getElementById("modalDate").value = dateStr;
+  document.getElementById("modalTitleInput").value = existingEvent?.title || "";
+  document.getElementById("modalLocationInput").value = existingEvent?.location || "";
+  document.getElementById("modalNotesInput").value = existingEvent?.notes || "";
+
+  buildClassCheckboxes(existingEvent?.classes || []);
+
+  document.getElementById("modalSaveBtn").onclick = () => {
+    const selectedClasses = Array.from(
+      document.querySelectorAll("#modalClassCheckboxes input[type=checkbox]:checked")
+    ).map(cb => cb.value);
+
+    if (selectedClasses.length === 0) {
+      alert("Please select at least one class.");
+      return;
+    }
+
+    if (!document.getElementById("modalTitleInput").value.trim()) {
+      alert("Please enter a title.");
+      return;
+    }
+
+    if (!document.getElementById("modalLocationInput").value.trim()) {
+      alert("Please enter a location.");
+      return;
+    }
+
+    const newEvent = {
+      date: document.getElementById("modalDate").value,
+      title: document.getElementById("modalTitleInput").value,
+      location: document.getElementById("modalLocationInput").value,
+      classes: selectedClasses,
+      notes: document.getElementById("modalNotesInput").value
+    };
+
+    const match = x =>
+      x.title === existingEvent?.title &&
+      x.location === existingEvent?.location &&
+      JSON.stringify(x.classes) === JSON.stringify(existingEvent?.classes) &&
+      x.notes === existingEvent?.notes &&
+      x.date === existingEvent?.date;
+
+    if (existingEvent) {
+      const idx = userEvents.findIndex(match);
+      if (idx !== -1) {
+        userEvents[idx] = newEvent;
+      }
+    } else {
+      userEvents.push(newEvent);
+    }
+
+    if (storageOK) {
+      localStorage.setItem("userEvents", JSON.stringify(userEvents));
+    } else {
+      alert("Events cannot be saved because your browser is blocking storage.");
+    }
+
+    modal.style.display = "none";
+    renderCalendar();
+  };
+
+  document.getElementById("modalCancelBtn").onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+/* Print Year View (Full Year) */
+document.getElementById("printYearBtn").addEventListener("click", () => {
+  buildPrintYearView();
+  window.print();
+});
+
+/* Print Year View (Filtered) */
+document.getElementById("exportPdfBtn").addEventListener("click", () => {
+  buildPrintYearViewFiltered();
+
+  const printView = document.getElementById("printYearView");
+  printView.style.display = "block";
+
+  window.print();
+
+  printView.style.display = "none";
+});
+
 /* Init */
 initClassFilters();
 renderCalendar();
-
 </script>
 </body>
 </html>
