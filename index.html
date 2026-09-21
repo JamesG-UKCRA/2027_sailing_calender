@@ -152,9 +152,21 @@
     }
   }
 </style>
+  ...
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 </head>
 
 <body>
+<h1>2027 Sailing Calendar</h1>
+
+<div id="authBar">
+  <span id="userInfo">Not signed in</span>
+  <button id="loginBtn">Sign in with Google</button>
+  <button id="logoutBtn" style="display:none;">Sign out</button>
+</div>
 
 <!-- Search -->
 <div style="margin-bottom:15px; padding:10px; background:#f0f4ff; border:1px solid #bcd0ff; border-radius:6px;">
@@ -219,19 +231,56 @@
     <button id="modalCancelBtn" style="padding:6px 12px; background:#dc3545; color:#fff; border:none; border-radius:4px; margin-left:10px;">Cancel</button>
   </div>
 </div>
-
 <script>
-/* Detect localStorage availability */
-let storageOK = true;
-try {
-  localStorage.setItem("storage_test", "1");
-  localStorage.removeItem("storage_test");
-} catch {
-  storageOK = false;
-  alert("Your browser is blocking event saving (private browsing or security mode). Events will not be saved.");
-}
+/* ----------------------------------------------------
+   1. Firebase config (PASTE YOUR REAL VALUES HERE)
+---------------------------------------------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCBsOJTfFPSuudG5F13V_kJX-56Yl_popE",
+  authDomain: "sailing-calander-2027.firebaseapp.com",
+  projectId: "sailing-calander-2027",
+  storageBucket: "sailing-calander-2027.firebasestorage.app",
+  messagingSenderId: "650671050301",
+  appId: "1:650671050301:web:9bf40f87f06b1d840d6454",
+  measurementId: "G-Y6KPLD55VX"
+};
 
-/* Calendar State */
+/* ----------------------------------------------------
+   2. Initialize Firebase
+---------------------------------------------------- */
+const app  = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+/* ----------------------------------------------------
+   3. Auth UI wiring
+---------------------------------------------------- */
+const loginBtn  = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const userInfo  = document.getElementById("userInfo");
+
+loginBtn.onclick = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider);
+};
+
+logoutBtn.onclick = () => auth.signOut();
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    userInfo.textContent = `Signed in as ${user.email}`;
+    loginBtn.style.display  = "none";
+    logoutBtn.style.display = "inline-block";
+  } else {
+    userInfo.textContent = "Not signed in";
+    loginBtn.style.display  = "inline-block";
+    logoutBtn.style.display = "none";
+  }
+});
+
+/* ----------------------------------------------------
+   4. Calendar state + static CatFest events
+---------------------------------------------------- */
 let currentYear = 2027;
 let currentMonth = 0;
 
@@ -240,7 +289,6 @@ const monthNames = [
   "July","August","September","October","November","December"
 ];
 
-/* Class List */
 const classes = [
   { name: "A-Class", schrs: 0.99 },
   { name: "Dart 15", schrs: 1.22 },
@@ -267,7 +315,6 @@ const classColors = {
   "Unicorn": "#F012BE"
 };
 
-/* Multi-Day Expansion */
 function expandMultiDay(start, end) {
   const dates = [];
   let current = new Date(start);
@@ -280,7 +327,6 @@ function expandMultiDay(start, end) {
   return dates;
 }
 
-/* CatFest Generator */
 function catfest(start, end, location) {
   const days = expandMultiDay(start, end);
   return days.flatMap(date =>
@@ -294,14 +340,15 @@ function catfest(start, end, location) {
   );
 }
 
-/* Default Events */
 const events = [
   ...catfest("2027-04-17", "2027-04-18", "Rutland Water"),
   ...catfest("2027-07-17", "2027-07-18", "Stokes Bay"),
   ...catfest("2027-10-16", "2027-10-17", "Grafham Water")
 ];
 
-/* Class Filters */
+/* ----------------------------------------------------
+   5. Class filters
+---------------------------------------------------- */
 const activeClasses = {};
 classes.forEach(c => activeClasses[c.name] = true);
 
@@ -336,10 +383,10 @@ function initClassFilters() {
   });
 }
 
-/* User Events */
-let userEvents = storageOK ? JSON.parse(localStorage.getItem("userEvents") || "[]") : [];
-
-/* Event Lookup */
+/* ----------------------------------------------------
+   6. Firestore-backed user events
+---------------------------------------------------- */
+let userEvents = [];
 let searchQuery = "";
 
 function getEventsForDate(dateStr) {
@@ -351,14 +398,13 @@ function getEventsForDate(dateStr) {
     (
       searchQuery === "" ||
       ev.title.toLowerCase().includes(searchQuery) ||
-      ev.location.toLowerCase().includes(searchQuery) ||
-      ev.notes.toLowerCase().includes(searchQuery) ||
+      (ev.location || "").toLowerCase().includes(searchQuery) ||
+      (ev.notes || "").toLowerCase().includes(searchQuery) ||
       (ev.classes || []).some(c => c.toLowerCase().includes(searchQuery))
     )
   );
 }
 
-/* Build Class Checkboxes */
 function buildClassCheckboxes(selected = []) {
   const box = document.getElementById("modalClassCheckboxes");
   box.innerHTML = "";
@@ -379,7 +425,26 @@ function buildClassCheckboxes(selected = []) {
   });
 }
 
-/* Safari-safe drag data */
+/* ----------------------------------------------------
+   7. Firestore realtime listener
+---------------------------------------------------- */
+function startEventListener() {
+  db.collection("events")
+    .orderBy("date")
+    .onSnapshot(snapshot => {
+      userEvents = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      renderCalendar();
+    });
+}
+
+startEventListener();
+
+/* ----------------------------------------------------
+   8. Safari-safe drag data
+---------------------------------------------------- */
 function safeDragData(ev) {
   try {
     event.dataTransfer.setData("text/plain", JSON.stringify(ev));
@@ -388,7 +453,9 @@ function safeDragData(ev) {
   }
 }
 
-/* Calendar Rendering */
+/* ----------------------------------------------------
+   9. Calendar rendering
+---------------------------------------------------- */
 const calendarGrid = document.getElementById("calendarGrid");
 const monthLabel = document.getElementById("monthLabel");
 const eventList = document.getElementById("eventList");
@@ -421,9 +488,8 @@ function renderCalendar() {
 
     const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
 
-    /* Drag & Drop */
     cell.addEventListener("dragover", e => e.preventDefault());
-    cell.addEventListener("drop", e => {
+    cell.addEventListener("drop", async e => {
       e.preventDefault();
 
       let ev;
@@ -438,28 +504,28 @@ function renderCalendar() {
         return;
       }
 
-      ev.date = dateStr;
-
-      const match = x =>
-        x.title === ev.title &&
-        x.location === ev.location &&
-        JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
-        x.notes === ev.notes &&
-        x.date === ev.date;
-
-      const idx = events.findIndex(match);
-      if (idx !== -1) events[idx].date = dateStr;
-
-      const uidx = userEvents.findIndex(match);
-      if (uidx !== -1) {
-        userEvents[uidx].date = dateStr;
-        if (storageOK) localStorage.setItem("userEvents", JSON.stringify(userEvents));
+      if (!ev.id) {
+        ev.date = dateStr;
+        const idx = events.findIndex(x =>
+          x.title === ev.title &&
+          x.location === ev.location &&
+          JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
+          x.notes === ev.notes &&
+          x.date === ev.date
+        );
+        if (idx !== -1) events[idx].date = dateStr;
+      } else {
+        try {
+          await db.collection("events").doc(ev.id).update({ date: dateStr });
+        } catch (err) {
+          console.error("Error updating event date:", err);
+          alert("Could not move event: " + err.message);
+        }
       }
 
       renderCalendar();
     });
 
-    /* Add Button */
     const addBtn = document.createElement("button");
     addBtn.textContent = "+";
     addBtn.style.cssText = `
@@ -474,13 +540,11 @@ function renderCalendar() {
     };
     cell.appendChild(addBtn);
 
-    /* Day Number */
     const dayNumber = document.createElement("div");
     dayNumber.className = "day-number";
     dayNumber.textContent = day;
     cell.appendChild(dayNumber);
 
-    /* Events */
     const dayEvents = getEventsForDate(dateStr);
 
     if (dayEvents.length > 0) {
@@ -512,24 +576,20 @@ function renderCalendar() {
           deleteBtn.textContent = " 🗑️";
           deleteBtn.style.cursor = "pointer";
           deleteBtn.style.color = "red";
-          deleteBtn.onclick = e => {
+          deleteBtn.onclick = async e => {
             e.stopPropagation();
 
-            const match = x =>
-              x.title === ev.title &&
-              x.location === ev.location &&
-              JSON.stringify(x.classes) === JSON.stringify(ev.classes) &&
-              x.notes === ev.notes &&
-              x.date === ev.date;
-
-            const uidx = userEvents.findIndex(match);
-            if (uidx !== -1) {
-              userEvents.splice(uidx, 1);
-              if (storageOK) localStorage.setItem("userEvents", JSON.stringify(userEvents));
+            if (!ev.id) {
+              alert("Default events cannot be deleted.");
+              return;
             }
 
-            const idx = events.findIndex(match);
-            if (idx !== -1) events.splice(idx, 1);
+            try {
+              await db.collection("events").doc(ev.id).delete();
+            } catch (err) {
+              console.error("Error deleting event:", err);
+              alert("Could not delete event: " + err.message);
+            }
 
             renderCalendar();
           };
@@ -548,7 +608,9 @@ function renderCalendar() {
   }
 }
 
-/* Event Details Panel */
+/* ----------------------------------------------------
+   10. Event details panel
+---------------------------------------------------- */
 function showEvents(dateStr, dayEvents) {
   const dateObj = new Date(dateStr);
   let html = `<strong>${dateObj.toDateString()}</strong><br>`;
@@ -566,7 +628,7 @@ function showEvents(dateStr, dayEvents) {
       html += `
         <li class="eventRow">
           ${labels}
-          <strong>${ev.title}</strong> – ${ev.location}
+          <strong>${ev.title}</strong> – ${ev.location || ""}
           <br>${ev.notes || ""}
         </li>
       `;
@@ -577,7 +639,9 @@ function showEvents(dateStr, dayEvents) {
   eventList.innerHTML = html;
 }
 
-/* Month Navigation */
+/* ----------------------------------------------------
+   11. Month navigation
+---------------------------------------------------- */
 document.getElementById("prevMonth").addEventListener("click", () => {
   currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
   renderCalendar();
@@ -588,7 +652,9 @@ document.getElementById("nextMonth").addEventListener("click", () => {
   renderCalendar();
 });
 
-/* Search Input */
+/* ----------------------------------------------------
+   12. Search input
+---------------------------------------------------- */
 const searchInput = document.getElementById("eventSearchInput");
 if (searchInput) {
   searchInput.addEventListener("input", e => {
@@ -597,7 +663,9 @@ if (searchInput) {
   });
 }
 
-/* Event Modal */
+/* ----------------------------------------------------
+   13. Event modal (Firestore-backed)
+---------------------------------------------------- */
 function openEventModal(dateStr, existingEvent = null) {
   const modal = document.getElementById("eventModal");
   modal.style.display = "flex";
@@ -609,7 +677,12 @@ function openEventModal(dateStr, existingEvent = null) {
 
   buildClassCheckboxes(existingEvent?.classes || []);
 
-  document.getElementById("modalSaveBtn").onclick = () => {
+  document.getElementById("modalSaveBtn").onclick = async () => {
+    if (!auth.currentUser) {
+      alert("You must be signed in to add or edit events.");
+      return;
+    }
+
     const selectedClasses = Array.from(
       document.querySelectorAll("#modalClassCheckboxes input[type=checkbox]:checked")
     ).map(cb => cb.value);
@@ -619,44 +692,42 @@ function openEventModal(dateStr, existingEvent = null) {
       return;
     }
 
-    if (!document.getElementById("modalTitleInput").value.trim()) {
+    const title = document.getElementById("modalTitleInput").value.trim();
+    const location = document.getElementById("modalLocationInput").value.trim();
+    const notes = document.getElementById("modalNotesInput").value;
+    const date = document.getElementById("modalDate").value;
+
+    if (!title) {
       alert("Please enter a title.");
       return;
     }
 
-    if (!document.getElementById("modalLocationInput").value.trim()) {
+    if (!location) {
       alert("Please enter a location.");
       return;
     }
 
     const newEvent = {
-      date: document.getElementById("modalDate").value,
-      title: document.getElementById("modalTitleInput").value,
-      location: document.getElementById("modalLocationInput").value,
+      date,
+      title,
+      location,
       classes: selectedClasses,
-      notes: document.getElementById("modalNotesInput").value
+      notes,
+      createdBy: auth.currentUser.email,
+      updatedBy: auth.currentUser.email,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
 
-    const match = x =>
-      x.title === existingEvent?.title &&
-      x.location === existingEvent?.location &&
-      JSON.stringify(x.classes) === JSON.stringify(existingEvent?.classes) &&
-      x.notes === existingEvent?.notes &&
-      x.date === existingEvent?.date;
-
-    if (existingEvent) {
-      const idx = userEvents.findIndex(match);
-      if (idx !== -1) {
-        userEvents[idx] = newEvent;
+    try {
+      if (existingEvent && existingEvent.id) {
+        await db.collection("events").doc(existingEvent.id).update(newEvent);
+      } else {
+        newEvent.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection("events").add(newEvent);
       }
-    } else {
-      userEvents.push(newEvent);
-    }
-
-    if (storageOK) {
-      localStorage.setItem("userEvents", JSON.stringify(userEvents));
-    } else {
-      alert("Events cannot be saved because your browser is blocking storage.");
+    } catch (err) {
+      console.error("Error saving event:", err);
+      alert("Could not save event: " + err.message);
     }
 
     modal.style.display = "none";
@@ -668,7 +739,9 @@ function openEventModal(dateStr, existingEvent = null) {
   };
 }
 
-/* Print Year View (Full Year) */
+/* ----------------------------------------------------
+   14. Print year view (full + filtered)
+---------------------------------------------------- */
 function buildPrintYearView() {
   const yearGrid = document.getElementById("yearGrid");
   const printTitle = document.getElementById("printYearTitle");
